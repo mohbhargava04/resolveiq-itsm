@@ -19,6 +19,7 @@ import com.resolveiq.incident.event.NoteAdded;
 import com.resolveiq.incident.event.PriorityAssessed;
 import com.resolveiq.incident.event.SlaBreached;
 import com.resolveiq.incident.event.SlaWarningRaised;
+import com.resolveiq.sla.SlaTarget;
 import com.resolveiq.user.domain.User;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -127,7 +128,7 @@ public class NotificationPolicy {
                 if (i.getAssignee() != null) {
                     plan.add(i.getAssignee(), p1 ? EnumSet.of(IN_APP, EMAIL, SMS) : EnumSet.of(IN_APP, EMAIL),
                             "SLA approaching on " + i.getNumber(),
-                            e.target() + " target due " + due(e.dueAt()) + ".", p1);
+                            (e.target() == SlaTarget.RESPONSE ? "Response" : "Resolution") + " target due " + due(e.dueAt()) + ".", p1);
                 } else {
                     directory.teamLeads().forEach(u -> plan.add(u, EnumSet.of(IN_APP),
                             "Unassigned incident nearing SLA: " + i.getNumber(), "Due " + due(e.dueAt()), p1));
@@ -135,7 +136,7 @@ public class NotificationPolicy {
             }
 
             case SlaBreached e -> {
-                String subject = e.target() + " SLA breached on " + i.getNumber();
+                String subject = (e.target() == SlaTarget.RESPONSE ? "Response" : "Resolution") + " SLA breached on " + i.getNumber();
                 String body = ref + " missed its " + e.target().name().toLowerCase() + " target ("
                         + due(e.dueAt()) + ").";
                 plan.add(i.getAssignee(), p1 ? EnumSet.of(IN_APP, EMAIL, SMS) : EnumSet.of(IN_APP, EMAIL),

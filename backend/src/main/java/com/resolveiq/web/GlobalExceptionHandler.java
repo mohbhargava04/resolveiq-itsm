@@ -18,6 +18,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.transaction.CannotCreateTransactionException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.context.request.async.AsyncRequestNotUsableException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -101,6 +102,12 @@ public class GlobalExceptionHandler {
     ResponseEntity<ProblemDetail> handleNoRoute(NoResourceFoundException ex, HttpServletRequest request) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(problem(ErrorCode.RESOURCE_NOT_FOUND,
                 "No such endpoint", request));
+    }
+
+    /** A browser closed its live-update stream (tab closed, laptop asleep). Nothing to report. */
+    @ExceptionHandler(AsyncRequestNotUsableException.class)
+    void handleClientGone() {
+        // the response can no longer be written; ignore
     }
 
     @ExceptionHandler(Exception.class)

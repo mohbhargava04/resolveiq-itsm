@@ -21,7 +21,7 @@ owns one module below: read its files, run its tests, and be ready to explain th
   Chain of Responsibility for escalation.
 
 ### Member 3 — Intelligent features, notifications & frontend
-- **Files:** `intelligence/*`, `notification/*` (Observer, Factory, Adapter), `live/*`, `frontend/`
+- **Files:** `intelligence/*`, `notification/*` (Observer, Factory, Adapter), `live/*`, `frontend/` (see `docs/DESIGN.md`)
 - **Tests:** `IntelligenceTest`
 - **Talking points:** TF-IDF + synonyms for duplicates; Naive Bayes classifier and calibration; correlation
   over the dependency graph; predictive SLA risk; the Observer → Policy → Factory → Channel → Adapter chain for
@@ -36,7 +36,7 @@ owns one module below: read its files, run its tests, and be ready to explain th
 
 ## Demo script (15–20 minutes)
 
-Before recording: `ITSM_RESET_DEMO=true ./mvnw spring-boot:run` so the live scenario is fresh.
+Before recording: `ITSM_RESET_DEMO=true ./mvnw spring-boot:run` so the live scenario is fresh, then open http://localhost:8080. Record in light mode and switch to dark once to show the theme toggle.
 
 1. **Intro (each member, 30 s)** — name and module.
 2. **Workflow 1 — report → prioritise → assign → notify** (Member 3/1)
@@ -65,8 +65,8 @@ Before recording: `ITSM_RESET_DEMO=true ./mvnw spring-boot:run` so the live scen
 | Week | Dates | Deliverables | Status |
 |---|---|---|---|
 | 1 | 23–29 Oct | Backend: domain, patterns, security, SLA, escalation, 7 intelligent features, 80 tests, docs | **Done** |
-| 2 | 30 Oct–5 Nov | Frontend foundation: design system, login, role shells, employee portal, live notifications | Next |
-| 3 | 6–12 Nov | Technician workbench (queue, kanban, incident view), manager command centre (charts, service map), admin screens | |
+| 2 | 29 Oct–5 Nov | Frontend: design system, light/dark themes, login, employee portal, technician workbench, command centre, service map, reports, all admin screens, live notifications, ⌘K | **Done** |
+| 3 | 6–12 Nov | Polish from team feedback, accessibility pass, frontend tests, cloud deployment | Next |
 | 4 | 13–19 Nov | Innovation extras (LLM adapter for classification/resolutions, chatbot/voice reporting), cloud deployment, polish | |
 | — | 19–22 Nov | PDF report (assembled from these docs), screenshots, video recording, upload | |
 

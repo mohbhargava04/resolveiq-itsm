@@ -10,7 +10,7 @@ notifications, a full audit trail and seven intelligent features.
 |---|---|
 | **Backend** | Java 21 · Spring Boot 3.5 · Spring Security (JWT) · JPA/Hibernate · Flyway |
 | **Database** | PostgreSQL 16 (production) · H2 (zero-setup development) |
-| **Frontend** | React + TypeScript (in progress — see `docs/TEAM_GUIDE.md`) |
+| **Frontend** | React 19 + TypeScript + Vite + Tailwind CSS; light, dark and system themes |
 | **Quality** | 80 automated tests (unit + integration), 78% line coverage, GitHub Actions CI |
 | **API docs** | Swagger UI at `http://localhost:8080/swagger-ui.html` |
 
@@ -18,15 +18,25 @@ notifications, a full audit trail and seven intelligent features.
 
 ## Run it
 
-**Prerequisite:** Java 21 (`java -version`). Nothing else — the Maven wrapper downloads Maven, and the
-development profile uses an embedded database.
+**Prerequisite:** Java 21 (`java -version`). Nothing else — the Maven wrapper downloads Maven, the
+development profile uses an embedded database, and the built web app is bundled inside the backend.
 
 ```sh
 cd backend
 ./mvnw spring-boot:run          # first run downloads dependencies (~2 min)
 ```
 
-Open **http://localhost:8080/swagger-ui.html**, call `POST /api/auth/login`, click **Authorize** and paste the token.
+Open **http://localhost:8080** and pick any demo account on the sign-in page.
+The API documentation is at **http://localhost:8080/swagger-ui.html**.
+
+### Working on the frontend (needs Node.js 20+)
+
+```sh
+cd frontend
+npm install
+npm run dev                     # http://localhost:5173, hot reload, proxies /api to the backend on :8080
+npm run build:backend           # rebuild the bundled copy served by Spring Boot
+```
 
 ```sh
 ./mvnw test                     # run all 80 tests
@@ -78,6 +88,7 @@ docker compose up --build       # production-like stack with PostgreSQL (from th
 | [TECHNOLOGY](docs/TECHNOLOGY.md) | Technology selection report (the 9 questions), why Spring Boot is still Java, scaling, security |
 | [TESTING](docs/TESTING.md) | Test strategy and 49 documented test cases |
 | [API](docs/API.md) | REST endpoint reference |
+| [DESIGN](docs/DESIGN.md) | UI design system, themes, the three workspaces, screenshots |
 | [TEAM GUIDE](docs/TEAM_GUIDE.md) | Module ownership, demo script, roadmap |
 
 ## Repository layout
@@ -96,6 +107,11 @@ backend/            Spring Boot API (Java 21)
     user/ catalog/ settings/ report/ security/ live/ web/ config/
   src/main/resources/db/migration/   Flyway SQL schema
   src/test/         unit and integration tests
-docs/               design documentation (Mermaid diagrams render on GitHub)
-legacy/             earlier prototype, kept for reference only
+frontend/           React + TypeScript web app
+  src/pages/        one file per screen (employee, technician, command centre, admin…)
+  src/components/   app shell, incident building blocks, dialogs, UI primitives
+  src/lib/          API client, auth, theme, live updates, formatting
+docs/               design documentation (Mermaid diagrams render on GitHub), screenshots
 ```
+
+![Command centre](docs/screenshots/08-command-centre.png)

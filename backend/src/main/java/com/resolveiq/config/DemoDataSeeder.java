@@ -280,14 +280,18 @@ public class DemoDataSeeder {
             // Spread over the last 30 days, a few hours apart, ending two days ago.
             Instant reported = now.minus(Duration.ofDays(2 + (n * 28L) / history.size()))
                     .minus(Duration.ofHours(n % 7 + 1));
+            // about two thirds of past incidents were categorised by the AI classifier
+            boolean ai = n % 3 != 0;
             Incident incident = create(h.title(), h.description(), h.service(), h.category(), h.impact(), h.urgency(),
-                    h.users(), people.get(h.reporter()), reported);
+                    h.users(), people.get(h.reporter()), reported, ai, ai ? 0.62 + (n % 5) * 0.07 : null);
             Technician t = tech(h.technician());
             Actor ta = Actor.of(t);
             Actor reporter = Actor.of(incident.getReporter());
             incident.assignTo(t, "Smart recommendation", Actor.SYSTEM, reported.plusSeconds(60));
             int responseTarget = incident.getSla().getResponseMinutes();
-            int m = h.minutesToResolve();
+            // most incidents were fixed inside their resolution target; roughly one in seven was late
+            int target = incident.getSla().getResolutionMinutes();
+            int m = n % 7 == 3 ? Math.max(h.minutesToResolve(), target + 15) : Math.min(h.minutesToResolve(), (int) (target * 0.85));
             // most incidents acknowledged in time; every 9th one late (when possible) for realistic SLA statistics
             long ackMinutes = (n % 9 == 8 && responseTarget + 4 < m - 5) ? responseTarget + 4
                     : Math.max(1, Math.min(responseTarget / 3, m / 4));
@@ -296,7 +300,7 @@ public class DemoDataSeeder {
             incident.startWork(ta, ack.plusSeconds(60));
             incident.addNote(NoteType.INVESTIGATION, "Investigating: checked logs and recent changes for "
                     + incident.getService().getName() + ".", true, t, ack.plus(Duration.ofMinutes(2)));
-            Instant resolved = reported.plus(Duration.ofMinutes(h.minutesToResolve()));
+            Instant resolved = reported.plus(Duration.ofMinutes(m));
             incident.resolve(new Resolution(h.resolution(), h.rootCause(), t), ta, resolved);
             incident.verify(reporter, resolved.plus(Duration.ofMinutes(25)));
             incident.close("Confirmed working by the reporter", reporter, resolved.plus(Duration.ofMinutes(30)));
@@ -407,13 +411,19 @@ public class DemoDataSeeder {
 
     private Incident create(String title, String description, String serviceCode, String categoryCode, Impact impact,
                             Urgency urgency, int affectedUsers, User reporter, Instant at) {
+        return create(title, description, serviceCode, categoryCode, impact, urgency, affectedUsers, reporter, at, false, null);
+    }
+
+    private Incident create(String title, String description, String serviceCode, String categoryCode, Impact impact,
+                            Urgency urgency, int affectedUsers, User reporter, Instant at, boolean automatic,
+                            Double confidence) {
         ItService service = svc.get(serviceCode);
         Category category = cat.get(categoryCode);
         Incident incident = incidentFactory.create(title, description, reporter, service, impact, urgency,
                 affectedUsers, at);
         PriorityAssessment assessment = priorityEngine.assess(impact, urgency, affectedUsers, service, category);
         SlaPolicy policy = slaResolver.resolve(service, assessment.priority());
-        incident.classify(new Classification(category, false, null, assessment, policy), Actor.SYSTEM,
+        incident.classify(new Classification(category, automatic, confidence, assessment, policy), Actor.SYSTEM,
                 at.plusSeconds(15));
         return incident;
     }

@@ -21,7 +21,6 @@ import com.resolveiq.incident.event.SlaBreached;
 import com.resolveiq.incident.event.SlaWarningRaised;
 import org.springframework.stereotype.Component;
 
-import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 
 /**
@@ -34,12 +33,13 @@ import java.time.format.DateTimeFormatter;
 @Component
 public class AuditTrailObserver implements IncidentObserver {
 
-    private static final DateTimeFormatter TIME = DateTimeFormatter.ofPattern("dd MMM HH:mm").withZone(ZoneOffset.UTC);
-
     private final AuditRepository repository;
+    private final DateTimeFormatter time;
 
-    public AuditTrailObserver(AuditRepository repository) {
+    public AuditTrailObserver(AuditRepository repository,
+                              @org.springframework.beans.factory.annotation.Value("${itsm.display-zone:Asia/Kolkata}") String zone) {
         this.repository = repository;
+        this.time = DateTimeFormatter.ofPattern("d MMM, HH:mm").withZone(java.time.ZoneId.of(zone));
     }
 
     @Override
@@ -79,13 +79,11 @@ public class AuditTrailObserver implements IncidentObserver {
                     (e.previousAssignee() == null ? "Assigned to " : "Re-assigned to ") + e.assigneeName()
                             + (e.strategy() == null ? "" : " via " + e.strategy()));
             case IncidentStatusChanged e -> b.states(e.from(), e.to()).description(
-                    e.from() + " → " + e.to() + (e.comment() == null ? "" : ": " + e.comment()));
+                    e.comment() == null || e.comment().isBlank() ? e.from().label() + " to " + e.to().label() : e.comment());
             case NoteAdded e -> b.description(noteLabel(e.noteType()) + (e.internal() ? " (internal)" : "")
                     + ": " + e.excerpt());
-            case SlaWarningRaised e -> b.description(e.target() + " SLA approaching: due " + TIME.format(e.dueAt())
-                    + " UTC");
-            case SlaBreached e -> b.description(e.target() + " SLA breached (was due " + TIME.format(e.dueAt())
-                    + " UTC)");
+            case SlaWarningRaised e -> b.description(target(e.target()) + " SLA approaching: due " + time.format(e.dueAt()));
+            case SlaBreached e -> b.description(target(e.target()) + " SLA breached (was due " + time.format(e.dueAt()) + ")");
             case IncidentEscalated e -> b.states(e.from(), e.to()).description(
                     "Escalated to " + e.to().label() + " " + e.targetName() + ": " + e.reason());
             case DuplicateSuspected e -> b.description(String.format(
@@ -121,6 +119,10 @@ public class AuditTrailObserver implements IncidentObserver {
             case AssignmentFailed e -> AuditAction.ASSIGNMENT_FAILED;
             case IncidentUpdated e -> AuditAction.INCIDENT_UPDATED;
         };
+    }
+
+    private static String target(com.resolveiq.sla.SlaTarget t) {
+        return t == com.resolveiq.sla.SlaTarget.RESPONSE ? "Response" : "Resolution";
     }
 
     private static String noteLabel(NoteType type) {

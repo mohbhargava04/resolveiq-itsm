@@ -16,4 +16,7 @@ data/
 # secrets
 .env
 *.env.local
+
+# old prototype (kept locally only)
 legacy/
+frontend/*.tsbuildinfo
