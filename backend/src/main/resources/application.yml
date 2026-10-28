@@ -1,0 +1,104 @@
+spring:
+  application:
+    name: resolveiq
+  profiles:
+    default: dev
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate          # schema is owned by Flyway migrations, Hibernate only validates it
+    properties:
+      hibernate:
+        jdbc.time_zone: UTC
+        default_batch_fetch_size: 50
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  jackson:
+    default-property-inclusion: non_null
+    serialization:
+      write-dates-as-timestamps: false
+  mail:
+    host: ${ITSM_SMTP_HOST:}
+    port: ${ITSM_SMTP_PORT:587}
+    username: ${ITSM_SMTP_USERNAME:}
+    password: ${ITSM_SMTP_PASSWORD:}
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
+
+server:
+  port: ${PORT:8080}
+  error:
+    include-stacktrace: never
+
+management:
+  health:
+    mail:
+      enabled: false   # SMTP is optional; an unconfigured mail server must not mark the app DOWN
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when-authorized
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+  api-docs:
+    path: /v3/api-docs
+
+itsm:
+  display-zone: ${ITSM_DISPLAY_ZONE:Asia/Kolkata}
+  security:
+    # HMAC-SHA256 signing key for JWTs. Override with ITSM_JWT_SECRET in every real deployment.
+    jwt-secret: ${ITSM_JWT_SECRET:resolveiq-dev-only-secret-change-me-0123456789abcdef}
+    token-validity-minutes: ${ITSM_TOKEN_VALIDITY_MINUTES:480}
+    max-failed-logins: 5
+    lockout-minutes: 15
+    bcrypt-strength: 12
+    allowed-origins: ${ITSM_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:3000}
+  sla:
+    monitor-enabled: true
+    monitor-interval-ms: ${ITSM_SLA_MONITOR_INTERVAL_MS:30000}
+  notifications:
+    # Channels switched on at runtime. EMAIL uses SMTP when spring.mail.host is set, otherwise it is simulated.
+    enabled-channels: IN_APP,EMAIL,SMS
+    from-address: ${ITSM_MAIL_FROM:no-reply@resolveiq.test}
+  intelligence:
+    duplicate-suspect-threshold: 0.45
+    duplicate-block-threshold: 0.85
+    duplicate-window-hours: 72
+    correlation-window-minutes: 60
+    correlation-min-incidents: 3
+  seed:
+    enabled: ${ITSM_SEED_ENABLED:true}
+    # true = wipe the database and rebuild the demo scenario on every start (use when recording demos)
+    reset-on-start: ${ITSM_RESET_DEMO:false}
+
+---
+spring:
+  config:
+    activate:
+      on-profile: dev
+  datasource:
+    url: jdbc:h2:file:./data/resolveiq;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH;AUTO_SERVER=TRUE
+    username: sa
+    password:
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+---
+spring:
+  config:
+    activate:
+      on-profile: postgres
+  datasource:
+    url: ${ITSM_DB_URL:jdbc:postgresql://localhost:5432/resolveiq}
+    username: ${ITSM_DB_USERNAME:resolveiq}
+    password: ${ITSM_DB_PASSWORD:resolveiq}

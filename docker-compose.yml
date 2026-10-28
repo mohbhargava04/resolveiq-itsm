@@ -1,0 +1,37 @@
+# Production-like stack: PostgreSQL + ResolveIQ API.
+#   docker compose up --build
+# API: http://localhost:8080   Swagger UI: http://localhost:8080/swagger-ui.html
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: resolveiq
+      POSTGRES_USER: resolveiq
+      POSTGRES_PASSWORD: resolveiq
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U resolveiq -d resolveiq"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build: ./backend
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: postgres
+      ITSM_DB_URL: jdbc:postgresql://db:5432/resolveiq
+      ITSM_DB_USERNAME: resolveiq
+      ITSM_DB_PASSWORD: resolveiq
+      ITSM_JWT_SECRET: change-this-to-a-long-random-secret-in-production-please
+      ITSM_ALLOWED_ORIGINS: http://localhost:5173,http://localhost:3000
+    ports:
+      - "8080:8080"
+
+volumes:
+  pgdata:

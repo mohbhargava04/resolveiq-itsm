@@ -1,0 +1,11 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:resolveiq-test;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH;DB_CLOSE_DELAY=-1
+    username: sa
+    password:
+
+itsm:
+  security:
+    bcrypt-strength: 4      # fast hashing in tests only
+  sla:
+    monitor-enabled: false  # tests drive the monitor directly with a controllable clock
