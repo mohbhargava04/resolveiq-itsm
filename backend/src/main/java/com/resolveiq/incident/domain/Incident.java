@@ -18,6 +18,9 @@ import com.resolveiq.incident.event.IncidentReported;
 import com.resolveiq.incident.event.IncidentStatusChanged;
 import com.resolveiq.incident.event.IncidentUpdated;
 import com.resolveiq.incident.event.LinkedAsDuplicate;
+import com.resolveiq.incident.event.LinkedToMajorIncident;
+import com.resolveiq.incident.event.MajorIncidentDeclared;
+import com.resolveiq.incident.event.MajorIncidentUpdated;
 import com.resolveiq.incident.event.NoteAdded;
 import com.resolveiq.incident.event.PriorityAssessed;
 import com.resolveiq.incident.event.SlaBreached;
@@ -179,6 +182,27 @@ public class Incident extends BaseEntity {
     @OrderBy("createdAt ASC, id ASC")
     private List<IncidentNote> notes = new ArrayList<>();
 
+    // ---- major incident -------------------------------------------------------------------------
+
+    /** A major incident is the coordinating record for a wide outage; related incidents link to it. */
+    @Column(nullable = false)
+    private boolean major;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "major_stage", length = 20)
+    private MajorStage majorStage;
+
+    @Column(name = "major_declared_at")
+    private Instant majorDeclaredAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "major_parent_id")
+    private Incident majorParent;
+
+    @OneToMany(mappedBy = "incident", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("createdAt DESC, id DESC")
+    private List<MajorIncidentUpdate> majorUpdates = new ArrayList<>();
+
     @Transient
     private final List<IncidentEvent> pendingEvents = new ArrayList<>();
 
@@ -283,6 +307,95 @@ public class Incident extends BaseEntity {
                     + parent.getDuplicateOf().getNumber() + "; link to the original instead");
         }
         state().closeAsDuplicate(this, parent, actor, at);
+    }
+
+    /** Cascade from a resolved major incident (see {@link IncidentState#resolveWithMajorIncident}). */
+    public void resolveWithMajorIncident(Incident majorIncident, Resolution resolutionOfMajor, Actor actor, Instant at) {
+        if (majorParent == null || !majorParent.getNumber().equals(majorIncident.getNumber())) {
+            throw new BusinessRuleViolationException(number + " is not linked to " + majorIncident.getNumber());
+        }
+        state().resolveWithMajorIncident(this, majorIncident, resolutionOfMajor, actor, at);
+    }
+
+    // =========================================================================================
+    // Major incident management
+    // =========================================================================================
+
+    /**
+     * Declares this a <b>major incident</b>: a wide outage that is coordinated in one place. Everyone
+     * whose incident is linked to it receives its status updates, and resolving it resolves them all.
+     */
+    public void declareMajor(String summary, Actor actor, Instant at) {
+        if (!actor.isSystem() && !actor.hasRole(Role.TEAM_LEAD, Role.ADMIN, Role.MANAGER)) {
+            throw new UnauthorizedOperationException("Only team leads, administrators and IT managers can declare a major incident");
+        }
+        if (!isActive()) {
+            throw new InvalidStateTransitionException(status.name(), "DECLARE_MAJOR");
+        }
+        if (major) {
+            throw new BusinessRuleViolationException(number + " is already a major incident");
+        }
+        if (majorParent != null) {
+            throw new BusinessRuleViolationException(number + " is already part of major incident " + majorParent.getNumber());
+        }
+        this.major = true;
+        this.majorStage = MajorStage.INVESTIGATING;
+        this.majorDeclaredAt = at;
+        String text = summary == null || summary.isBlank()
+                ? "We are aware of a problem affecting " + service.getName() + " and are investigating." : summary.trim();
+        majorUpdates.add(new MajorIncidentUpdate(this, MajorStage.INVESTIGATING, truncate(text, 2000), null, actor.name(), at));
+        notes.add(new IncidentNote(this, null, actor.name(), NoteType.SYSTEM, false,
+                "Declared a major incident by " + actor.name() + ". Status updates will go to everyone affected.", at));
+        record(new MajorIncidentDeclared(this, actor, at, text));
+    }
+
+    /** Links this incident to an open major incident; its reporter then receives the major incident's updates. */
+    public void linkToMajor(Incident parent, Actor actor, Instant at) {
+        Objects.requireNonNull(parent, "parent");
+        if (!actor.isManagement() && !isAssignee(actor)) {
+            throw new UnauthorizedOperationException("Only IT staff can link incidents to a major incident");
+        }
+        if (parent == this || parent.getNumber().equals(number)) {
+            throw new BusinessRuleViolationException("An incident cannot be linked to itself");
+        }
+        if (!parent.isMajor() || !parent.isActive()) {
+            throw new BusinessRuleViolationException(parent.getNumber() + " is not an open major incident");
+        }
+        if (major) {
+            throw new BusinessRuleViolationException(number + " is itself a major incident");
+        }
+        if (!isActive()) {
+            throw new InvalidStateTransitionException(status.name(), "LINK_TO_MAJOR");
+        }
+        if (majorParent != null) {
+            throw new BusinessRuleViolationException(number + " is already linked to " + majorParent.getNumber());
+        }
+        this.majorParent = parent;
+        notes.add(new IncidentNote(this, null, Actor.SYSTEM.name(), NoteType.SYSTEM, false,
+                "Linked to major incident " + parent.getNumber() + " (" + parent.getTitle()
+                        + "). You will receive its status updates.", at));
+        record(new LinkedToMajorIncident(this, actor, at, parent.getNumber()));
+    }
+
+    /** A public status update; the stage moves forward or back as the investigation goes. */
+    public void postMajorUpdate(MajorStage stage, String message, User author, Instant at) {
+        Actor actor = author == null ? Actor.SYSTEM : Actor.of(author);
+        if (!major) {
+            throw new BusinessRuleViolationException(number + " is not a major incident");
+        }
+        if (!isActive()) {
+            throw new InvalidStateTransitionException(status.name(), "POST_MAJOR_UPDATE");
+        }
+        if (!actor.isManagement() && !isAssignee(actor)) {
+            throw new UnauthorizedOperationException("Only the incident owner or a supervisor can post updates");
+        }
+        if (stage == null || stage == MajorStage.RESOLVED) {
+            throw new BusinessRuleViolationException("Choose Investigating, Cause identified or Monitoring; resolving the incident marks it resolved");
+        }
+        requireText(message, "Write a short status update");
+        this.majorStage = stage;
+        majorUpdates.add(new MajorIncidentUpdate(this, stage, truncate(message.trim(), 2000), author, actor.name(), at));
+        record(new MajorIncidentUpdated(this, actor, at, stage, message.trim()));
     }
 
     // =========================================================================================
@@ -480,11 +593,23 @@ public class Incident extends BaseEntity {
 
     void applyResolution(Resolution r, Actor actor, Instant at) {
         this.resolution = r;
+        if (major) {
+            majorStage = MajorStage.RESOLVED;
+            majorUpdates.add(new MajorIncidentUpdate(this, MajorStage.RESOLVED, truncate("Resolved: " + r.getSummary(), 2000),
+                    r.getResolvedBy(), actor.name(), at));
+        }
         notes.add(new IncidentNote(this, r.getResolvedBy(), actor.name(), NoteType.RESOLUTION, false,
                 r.getSummary() + (r.getRootCause() == null ? "" : "\nRoot cause: " + r.getRootCause()), at));
         if (sla.markResolved(at)) {
             record(new SlaBreached(this, Actor.SYSTEM, at, SlaTarget.RESOLUTION, sla.getResolutionDueAt()));
         }
+    }
+
+    void applyMajorResolution(Resolution r, Actor actor, Instant at) {
+        if (sla.isPaused()) {
+            sla.resume(at); // the question to the reporter is moot now
+        }
+        applyResolution(r, actor, at);
     }
 
     void applyReopen(String reason, Actor actor, Instant at) {
@@ -675,6 +800,19 @@ public class Incident extends BaseEntity {
         if (reporter && state().acceptsFeedback() && (feedback == null || feedback.getRating() == null)) {
             actions.add(IncidentAction.FEEDBACK);
         }
+        boolean active = status.isActive();
+        if (supervisor && active && !major && majorParent == null) {
+            actions.add(IncidentAction.DECLARE_MAJOR);
+        }
+        if ((management || assignee) && active && !major && majorParent == null) {
+            actions.add(IncidentAction.LINK_TO_MAJOR);
+        }
+        if ((management || assignee) && active && major) {
+            actions.add(IncidentAction.POST_MAJOR_UPDATE);
+        }
+        if (staff && resolution != null) {
+            actions.add(IncidentAction.PUBLISH_ARTICLE);
+        }
         return actions;
     }
 
@@ -815,5 +953,25 @@ public class Incident extends BaseEntity {
 
     public List<IncidentNote> getNotes() {
         return Collections.unmodifiableList(notes);
+    }
+
+    public boolean isMajor() {
+        return major;
+    }
+
+    public MajorStage getMajorStage() {
+        return majorStage;
+    }
+
+    public Instant getMajorDeclaredAt() {
+        return majorDeclaredAt;
+    }
+
+    public Incident getMajorParent() {
+        return majorParent;
+    }
+
+    public List<MajorIncidentUpdate> getMajorUpdates() {
+        return Collections.unmodifiableList(majorUpdates);
     }
 }

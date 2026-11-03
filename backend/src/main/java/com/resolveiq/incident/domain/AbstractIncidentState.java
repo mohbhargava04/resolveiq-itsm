@@ -72,6 +72,11 @@ abstract class AbstractIncidentState implements IncidentState {
     }
 
     @Override
+    public void resolveWithMajorIncident(Incident incident, Incident major, Resolution resolution, Actor actor, Instant at) {
+        throw reject("RESOLVE_WITH_MAJOR_INCIDENT");
+    }
+
+    @Override
     public boolean allowsDetailEdits() {
         return false;
     }

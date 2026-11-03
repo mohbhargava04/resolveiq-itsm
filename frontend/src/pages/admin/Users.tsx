@@ -1,12 +1,12 @@
 import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Plus, Search } from 'lucide-react'
+import { FileUp, KeyRound, LockOpen, LogOut, Plus, Search, ShieldCheck, ShieldOff } from 'lucide-react'
 import { api, ApiError } from '@/lib/api'
 import { useUser } from '@/lib/auth'
 import { ago, cn, ROLE_LABEL } from '@/lib/format'
 import type { CategoryView, Role, User } from '@/lib/types'
-import { Avatar, Button, Dialog, ErrorNote, Field, Input, PageHeader, Panel, Select, Skeleton, Switch } from '@/components/ui'
+import { Avatar, Button, ChipsInput, Dialog, ErrorNote, Field, Input, PageHeader, Panel, Segmented, Select, Skeleton, Switch, Textarea } from '@/components/ui'
 
 const ROLES: Role[] = ['EMPLOYEE', 'TECHNICIAN', 'TEAM_LEAD', 'ADMIN', 'MANAGER']
 const LEVELS = ['JUNIOR', 'MID', 'SENIOR', 'EXPERT']
@@ -18,6 +18,7 @@ export default function Users() {
   const [filter, setFilter] = useState('')
   const [role, setRole] = useState<'' | Role>('')
   const [editing, setEditing] = useState<User | 'new' | null>(null)
+  const [importing, setImporting] = useState(false)
 
   const toggleActive = useMutation({
     mutationFn: (u: User) => api.put<User>(`/admin/users/${u.id}`, { active: !u.active }),
@@ -35,7 +36,10 @@ export default function Users() {
   return (
     <div>
       <PageHeader title="People" description="Everyone who can sign in, with their role, skills and current workload."
-        actions={<Button variant="primary" icon={<Plus className="size-4" />} onClick={() => setEditing('new')}>Add person</Button>} />
+        actions={<>
+          <Button icon={<FileUp className="size-4" />} onClick={() => setImporting(true)}>Import CSV</Button>
+          <Button variant="primary" icon={<Plus className="size-4" />} onClick={() => setEditing('new')}>Add person</Button>
+        </>} />
 
       <div className="mb-4 flex flex-wrap gap-2">
         <div className="relative min-w-[240px] flex-1">
@@ -57,6 +61,7 @@ export default function Users() {
                   <th className="px-5 py-2.5 font-medium">Name</th>
                   <th className="py-2.5 font-medium">Role</th>
                   <th className="py-2.5 font-medium">Skills and load</th>
+                  <th className="py-2.5 font-medium">Sign-in</th>
                   <th className="py-2.5 font-medium">Last sign-in</th>
                   <th className="px-5 py-2.5 text-right font-medium">Active</th>
                 </tr>
@@ -90,6 +95,14 @@ export default function Users() {
                         </div>
                       ) : <span className="text-faint">—</span>}
                     </td>
+                    <td className="py-2.5">
+                      <div className="flex flex-wrap gap-1">
+                        {u.googleLinked && <span className="rounded bg-surface-2 px-1.5 py-px text-[11px] text-ink-2">Google</span>}
+                        {u.passwordEnabled && <span className="rounded bg-surface-2 px-1.5 py-px text-[11px] text-ink-2">Password</span>}
+                        {u.mfaEnabled && <span className="rounded bg-ok-soft px-1.5 py-px text-[11px] font-medium text-ok">2FA</span>}
+                        {u.lockedUntil && new Date(u.lockedUntil) > new Date() && <span className="rounded bg-p1-soft px-1.5 py-px text-[11px] font-medium text-p1">Locked</span>}
+                      </div>
+                    </td>
                     <td className="py-2.5 text-muted">{u.lastLoginAt ? ago(u.lastLoginAt) : 'Never'}</td>
                     <td className="px-5 py-2.5 text-right">
                       <Switch checked={u.active} onChange={() => toggleActive.mutate(u)} disabled={u.id === me.id} label={`${u.fullName} active`} />
@@ -103,7 +116,101 @@ export default function Users() {
       </Panel>
 
       {editing && <UserDialog user={editing === 'new' ? null : editing} onClose={() => setEditing(null)} />}
+      {importing && <ImportDialog onClose={() => setImporting(false)} />}
     </div>
+  )
+}
+
+const TEMPLATE = `email,name,role,department,skills
+tara.nair@resolveiq.test,Tara Nair,TECHNICIAN,IT Operations,NETWORK;CLOUD
+omar.khan@resolveiq.test,Omar Khan,EMPLOYEE,Physics,`
+
+/** Pre-register people; they sign in with their company account and land in their role's workspace. */
+function ImportDialog({ onClose }: { onClose: () => void }) {
+  const qc = useQueryClient()
+  const [csv, setCsv] = useState('')
+  const run = useMutation({
+    mutationFn: () => api.post<{ line: number; email: string; outcome: string; detail: string }[]>('/admin/users/import', { csv }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'users'] }),
+  })
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()} title="Import people from CSV" width={620}
+      description="Columns: email, name, role, department, skills (separated by ;). Imported people sign in with their company Google account — no passwords are created."
+      footer={run.data ? <Button variant="primary" onClick={onClose}>Done</Button>
+        : <><Button variant="ghost" onClick={onClose}>Cancel</Button><Button variant="primary" loading={run.isPending} disabled={!csv.trim()} onClick={() => run.mutate()}>Import</Button></>}>
+      {run.data ? (
+        <ul className="space-y-1.5 text-[13px]">
+          {run.data.map((r) => (
+            <li key={r.line} className="flex gap-2">
+              <span className={cn('w-16 shrink-0 text-xs font-semibold', r.outcome === 'CREATED' ? 'text-ok' : r.outcome === 'SKIPPED' ? 'text-muted' : 'text-p1')}>{r.outcome.toLowerCase()}</span>
+              <span className="min-w-0 truncate">{r.email}</span>
+              <span className="ml-auto truncate text-xs text-muted">{r.detail}</span>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <div className="space-y-3">
+          <Textarea rows={8} value={csv} onChange={(e) => setCsv(e.target.value)} className="font-mono text-[12.5px]" placeholder={TEMPLATE} aria-label="CSV" />
+          <div className="flex flex-wrap items-center gap-2">
+            <label className="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-md border border-line-strong px-2.5 text-[13px] font-medium hover:bg-surface-2">
+              <FileUp className="size-3.5" /> Choose a .csv file
+              <input type="file" accept=".csv,text/csv" className="sr-only" onChange={async (e) => { const f = e.target.files?.[0]; if (f) setCsv(await f.text()) }} />
+            </label>
+            <Button size="sm" variant="ghost" onClick={() => setCsv(TEMPLATE)}>Use the example</Button>
+          </div>
+          {run.error ? <ErrorNote error={run.error} /> : null}
+        </div>
+      )}
+    </Dialog>
+  )
+}
+
+/** Clearance and account security for an existing person. */
+function AccessSection({ user, onChanged }: { user: User; onChanged: () => void }) {
+  const me = useUser()
+  const qc = useQueryClient()
+  const [role, setRole] = useState<Role>(user.role)
+  const [skills, setSkills] = useState<string[]>([])
+  const becomingTechnical = (role === 'TECHNICIAN' || role === 'TEAM_LEAD') && !user.technician
+  const done = (msg: string) => () => { qc.invalidateQueries({ queryKey: ['admin', 'users'] }); toast.success(msg); onChanged() }
+  const fail = (e: unknown) => toast.error(e instanceof Error ? e.message : 'Failed')
+  const changeRole = useMutation({
+    mutationFn: () => api.post<User>(`/admin/users/${user.id}/role`, { role, skills: becomingTechnical ? skills : undefined }),
+    onSuccess: done(`${user.fullName} is now ${ROLE_LABEL[role].toLowerCase()}; their sessions were ended`), onError: fail,
+  })
+  const unlock = useMutation({ mutationFn: () => api.post(`/admin/users/${user.id}/unlock`), onSuccess: done('Account unlocked'), onError: fail })
+  const resetMfa = useMutation({ mutationFn: () => api.post(`/admin/users/${user.id}/reset-mfa`), onSuccess: done('Two-step verification reset'), onError: fail })
+  const signOut = useMutation({ mutationFn: () => api.post(`/admin/users/${user.id}/revoke-sessions`), onSuccess: done('Signed out of every device'), onError: fail })
+  const locked = user.lockedUntil && new Date(user.lockedUntil) > new Date()
+  const self = user.id === me.id
+  return (
+    <section className="space-y-3 rounded-lg border border-line p-4">
+      <h3 className="text-[13px] font-semibold">Access and security</h3>
+      <div className="flex flex-wrap items-end gap-2">
+        <Field label="Role (clearance)" htmlFor="u-role" className="min-w-48 flex-1"
+          hint={self ? 'You cannot change your own role' : 'Changing it ends their sessions immediately'}>
+          <Select id="u-role" value={role} disabled={self} onChange={(e) => setRole(e.target.value as Role)}>
+            {ROLES.filter((r) => r !== 'MANAGER' || me.role === 'MANAGER' || user.role === 'MANAGER').map((r) => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}
+          </Select>
+        </Field>
+        <Button disabled={self || role === user.role || (becomingTechnical && !skills.length)} loading={changeRole.isPending} onClick={() => changeRole.mutate()} className="mb-[22px]">Change role</Button>
+      </div>
+      {becomingTechnical && (
+        <Field label="Skills for routing" htmlFor="u-skills" hint="At least one, e.g. NETWORK, DATABASE, AUTHENTICATION">
+          <ChipsInput id="u-skills" value={skills} onChange={setSkills} placeholder="Type a skill and press Enter" />
+        </Field>
+      )}
+      <div className="flex flex-wrap gap-2">
+        {locked && <Button size="sm" icon={<LockOpen className="size-3.5" />} loading={unlock.isPending} onClick={() => unlock.mutate()}>Unlock account</Button>}
+        {user.mfaEnabled && <Button size="sm" icon={<ShieldOff className="size-3.5" />} loading={resetMfa.isPending} onClick={() => resetMfa.mutate()}>Reset 2FA (lost phone)</Button>}
+        {!self && <Button size="sm" icon={<LogOut className="size-3.5" />} loading={signOut.isPending} onClick={() => signOut.mutate()}>Sign out everywhere</Button>}
+      </div>
+      <p className="flex flex-wrap gap-x-3 text-xs text-muted">
+        <span className="inline-flex items-center gap-1"><ShieldCheck className="size-3.5" />{user.mfaEnabled ? '2FA on' : '2FA off'}</span>
+        <span className="inline-flex items-center gap-1"><KeyRound className="size-3.5" />{user.passwordEnabled ? 'Has a password' : 'Company account only'}</span>
+        <span>{user.googleLinked ? 'Google linked' : 'Google not linked yet'}</span>
+      </p>
+    </section>
   )
 }
 
@@ -118,6 +225,7 @@ function UserDialog({ user, onClose }: { user: User | null; onClose: () => void 
     fullName: user?.fullName ?? '',
     email: user?.email ?? '',
     password: '',
+    method: 'GOOGLE' as 'GOOGLE' | 'PASSWORD',
     phone: user?.phone ?? '',
     department: user?.department ?? '',
     skills: user?.technician?.skills ?? [] as string[],
@@ -136,7 +244,8 @@ function UserDialog({ user, onClose }: { user: User | null; onClose: () => void 
           teamLeadId: techRole ? (form.teamLeadId ? Number(form.teamLeadId) : 0) : undefined,
         })
       : api.post('/admin/users', {
-          ...form, phone: form.phone || undefined, department: form.department || undefined,
+          ...form, password: form.method === 'PASSWORD' ? form.password : undefined, method: undefined,
+          phone: form.phone || undefined, department: form.department || undefined,
           skills: techRole ? form.skills : undefined, experienceLevel: techRole ? form.experienceLevel : undefined,
           maxActiveIncidents: techRole ? Number(form.maxActiveIncidents) : undefined,
           teamLeadId: techRole && form.teamLeadId ? Number(form.teamLeadId) : undefined,
@@ -167,10 +276,18 @@ function UserDialog({ user, onClose }: { user: User | null; onClose: () => void 
           <Field label="Department"><Input value={form.department} onChange={set('department')} /></Field>
         </div>
         {!user && (
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Email" error={fe.email}><Input type="email" value={form.email} onChange={set('email')} /></Field>
-            <Field label="Temporary password" error={fe.password} hint="8+ characters, letter and digit"><Input type="text" value={form.password} onChange={set('password')} /></Field>
-          </div>
+          <>
+            <Field label="Work email" error={fe.email}><Input type="email" value={form.email} onChange={set('email')} /></Field>
+            <Field label="How they sign in">
+              <Segmented name="Sign-in method" value={form.method} onChange={(v) => setForm({ ...form, method: v })}
+                options={[{ value: 'GOOGLE', label: 'Company account (Google)' }, { value: 'PASSWORD', label: 'Temporary password' }]} />
+            </Field>
+            {form.method === 'PASSWORD' ? (
+              <Field label="Temporary password" error={fe.password} hint="8+ characters, letter and digit; ask them to change it"><Input type="text" value={form.password} onChange={set('password')} /></Field>
+            ) : (
+              <p className="-mt-2 text-xs text-muted">They sign in with Google using this address and land straight in the {ROLE_LABEL[form.role].toLowerCase()} workspace. No password is created.</p>
+            )}
+          </>
         )}
         <Field label="Phone" hint="Used for SMS alerts on critical incidents" error={fe.phone}><Input value={form.phone} onChange={set('phone')} /></Field>
         {techRole && (
@@ -200,6 +317,7 @@ function UserDialog({ user, onClose }: { user: User | null; onClose: () => void 
             </div>
           </>
         )}
+        {user && <AccessSection user={user} onChanged={onClose} />}
         {save.error && !Object.keys(fe).length ? <ErrorNote error={save.error} /> : null}
       </div>
     </Dialog>

@@ -15,6 +15,9 @@ import com.resolveiq.incident.event.IncidentReported;
 import com.resolveiq.incident.event.IncidentStatusChanged;
 import com.resolveiq.incident.event.IncidentUpdated;
 import com.resolveiq.incident.event.LinkedAsDuplicate;
+import com.resolveiq.incident.event.LinkedToMajorIncident;
+import com.resolveiq.incident.event.MajorIncidentDeclared;
+import com.resolveiq.incident.event.MajorIncidentUpdated;
 import com.resolveiq.incident.event.NoteAdded;
 import com.resolveiq.incident.event.PriorityAssessed;
 import com.resolveiq.incident.event.SlaBreached;
@@ -93,6 +96,9 @@ public class AuditTrailObserver implements IncidentObserver {
                     + (e.comment() == null ? "" : ": " + e.comment()));
             case AssignmentFailed e -> b.description("Automatic assignment failed: " + e.reason());
             case IncidentUpdated e -> b.description("Details updated: " + e.changes());
+            case MajorIncidentDeclared e -> b.states(null, "MAJOR").description("Declared a major incident: " + e.summary());
+            case LinkedToMajorIncident e -> b.description("Linked to major incident " + e.majorNumber());
+            case MajorIncidentUpdated e -> b.states(null, e.stage().label()).description("Status update: " + e.message());
         }
         return b.build();
     }
@@ -118,6 +124,9 @@ public class AuditTrailObserver implements IncidentObserver {
             case FeedbackSubmitted e -> AuditAction.FEEDBACK_SUBMITTED;
             case AssignmentFailed e -> AuditAction.ASSIGNMENT_FAILED;
             case IncidentUpdated e -> AuditAction.INCIDENT_UPDATED;
+            case MajorIncidentDeclared e -> AuditAction.MAJOR_INCIDENT_DECLARED;
+            case LinkedToMajorIncident e -> AuditAction.LINKED_TO_MAJOR_INCIDENT;
+            case MajorIncidentUpdated e -> AuditAction.MAJOR_INCIDENT_UPDATE;
         };
     }
 

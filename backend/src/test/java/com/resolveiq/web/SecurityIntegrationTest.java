@@ -57,13 +57,17 @@ class SecurityIntegrationTest extends IntegrationTestBase {
     @Test
     @DisplayName("TC-37 Registration creates an employee; duplicate e-mail and invalid input are rejected")
     void register() throws Exception {
-        Response ok = post(null, "/api/auth/register", Map.of("fullName", "New Person", "email", "new.person@resolveiq.test",
+        Response common = post(null, "/api/auth/register", Map.of("fullName", "New Person", "email", "new.person@resolveiq.test",
                 "password", "Welcome123", "department", "Physics"));
+        assertThat(common.status()).as("breached passwords are refused").isEqualTo(422);
+
+        Response ok = post(null, "/api/auth/register", Map.of("fullName", "New Person", "email", "new.person@resolveiq.test",
+                "password", "Maple-Orbit-71", "department", "Physics"));
         assertThat(ok.status()).isEqualTo(201);
         assertThat(ok.body().at("/user/role").asText()).isEqualTo("EMPLOYEE");
 
         Response dup = post(null, "/api/auth/register", Map.of("fullName", "Ava Again", "email", "ava@resolveiq.test",
-                "password", "Welcome123"));
+                "password", "Maple-Orbit-71"));
         assertThat(dup.status()).isEqualTo(409);
 
         Response bad = post(null, "/api/auth/register", Map.of("fullName", "", "email", "not-an-email", "password", "x"));

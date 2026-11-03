@@ -11,9 +11,11 @@ import org.springframework.stereotype.Component;
 public class DemoDataRunner implements ApplicationRunner {
 
     private final DemoDataSeeder seeder;
+    private final KnowledgeBaseSeeder knowledgeBase;
 
-    public DemoDataRunner(DemoDataSeeder seeder) {
+    public DemoDataRunner(DemoDataSeeder seeder, KnowledgeBaseSeeder knowledgeBase) {
         this.seeder = seeder;
+        this.knowledgeBase = knowledgeBase;
     }
 
     @Override
@@ -21,5 +23,6 @@ public class DemoDataRunner implements ApplicationRunner {
         if (seeder.isEmpty()) {
             seeder.seed();
         }
+        knowledgeBase.seedIfEmpty();
     }
 }

@@ -15,6 +15,9 @@ import com.resolveiq.incident.event.IncidentReported;
 import com.resolveiq.incident.event.IncidentStatusChanged;
 import com.resolveiq.incident.event.IncidentUpdated;
 import com.resolveiq.incident.event.LinkedAsDuplicate;
+import com.resolveiq.incident.event.LinkedToMajorIncident;
+import com.resolveiq.incident.event.MajorIncidentDeclared;
+import com.resolveiq.incident.event.MajorIncidentUpdated;
 import com.resolveiq.incident.event.NoteAdded;
 import com.resolveiq.incident.event.PriorityAssessed;
 import com.resolveiq.incident.event.SlaBreached;
@@ -52,11 +55,13 @@ public class NotificationPolicy {
     }
 
     private final RecipientDirectory directory;
+    private final com.resolveiq.incident.IncidentRepository incidents;
     private final DateTimeFormatter timeFormat;
 
-    public NotificationPolicy(RecipientDirectory directory,
+    public NotificationPolicy(RecipientDirectory directory, com.resolveiq.incident.IncidentRepository incidents,
                               @Value("${itsm.display-zone:Asia/Kolkata}") String zone) {
         this.directory = directory;
+        this.incidents = incidents;
         this.timeFormat = DateTimeFormatter.ofPattern("dd MMM, HH:mm z").withZone(ZoneId.of(zone));
     }
 
@@ -183,6 +188,35 @@ public class NotificationPolicy {
 
             case IncidentUpdated e -> plan.add(i.getAssignee(), EnumSet.of(IN_APP), i.getNumber() + " was updated",
                     e.changes(), false);
+
+            case MajorIncidentDeclared e -> {
+                String subject = "Major incident declared: " + i.getTitle();
+                String body = i.getService().getName() + " — " + e.summary();
+                directory.supervisors().forEach(u -> plan.add(u, EnumSet.of(IN_APP, EMAIL, SMS), subject, body, true));
+                directory.managers().forEach(u -> plan.add(u, EnumSet.of(IN_APP, EMAIL, SMS), subject, body, true));
+                plan.add(i.getAssignee(), EnumSet.of(IN_APP, EMAIL, SMS), subject, body, true);
+                plan.add(i.getReporter(), EnumSet.of(IN_APP, EMAIL), "Your incident " + i.getNumber() + " is now a major incident",
+                        "We are treating this as a wide outage and coordinating the response centrally. " + e.summary(), false);
+            }
+
+            case LinkedToMajorIncident e -> {
+                Incident major = i.getMajorParent();
+                plan.add(i.getReporter(), EnumSet.of(IN_APP, EMAIL), i.getNumber() + " is part of a wider problem",
+                        "Your report is caused by an ongoing major incident: " + (major == null ? e.majorNumber() : major.getTitle())
+                                + ". You will receive its status updates here.", false);
+            }
+
+            case MajorIncidentUpdated e -> {
+                String subject = e.stage().label() + ": " + i.getTitle();
+                plan.add(i.getReporter(), EnumSet.of(IN_APP, EMAIL), subject, e.message(), false);
+                for (Incident child : incidents.findLinkedTo(i.getId())) {
+                    if (child.isActive()) {
+                        plan.add(child.getReporter(), EnumSet.of(IN_APP, EMAIL), subject, e.message(), false);
+                        plan.add(child.getAssignee(), EnumSet.of(IN_APP), subject, e.message(), false);
+                    }
+                }
+                directory.supervisors().forEach(u -> plan.add(u, EnumSet.of(IN_APP), subject, e.message(), false));
+            }
         }
         return plan.dispatches();
     }

@@ -73,7 +73,8 @@ public final class IncidentDtos {
                                   Ref category, Ref service, PersonRef reporter, PersonRef assignee,
                                   Instant createdAt, Instant updatedAt, String slaStatus, Instant responseDueAt,
                                   Instant resolutionDueAt, Long minutesRemaining, String escalationLevel,
-                                  String suspectedDuplicateOf, boolean autoClassified) {
+                                  String suspectedDuplicateOf, boolean autoClassified, boolean major,
+                                  String majorParent) {
     }
 
     public record SlaView(String policyName, Integer responseMinutes, Integer resolutionMinutes, Instant startedAt,
@@ -98,6 +99,46 @@ public final class IncidentDtos {
     public record NoteView(Long id, String type, boolean internal, String author, String content, Instant createdAt) {
     }
 
+    public record MajorUpdateView(String stage, String stageLabel, String message, String author, Instant at) {
+    }
+
+    public record LinkedIncidentView(String number, String title, String status, PersonRef reporter) {
+    }
+
+    /** Present when the incident is a major incident. */
+    public record MajorView(String stage, String stageLabel, Instant declaredAt, List<MajorUpdateView> updates,
+                            List<LinkedIncidentView> linked) {
+    }
+
+    /** Present when the incident is linked to a major incident. */
+    public record MajorParentView(String number, String title, String stage, String stageLabel,
+                                  MajorUpdateView latestUpdate) {
+    }
+
+    /** A major incident as shown on every user's status banner. */
+    public record MajorIncidentBanner(String number, String title, Ref service, String priority, String stage,
+                                      String stageLabel, Instant declaredAt, MajorUpdateView latestUpdate,
+                                      int linkedCount, boolean affectsMe) {
+    }
+
+    public record DeclareMajorRequest(@Size(max = 2000) String summary, List<String> link) {
+    }
+
+    public record MajorUpdateRequest(@NotNull com.resolveiq.incident.domain.MajorStage stage,
+                                     @NotBlank @Size(max = 2000) String message) {
+    }
+
+    public record LinkMajorRequest(@NotBlank String majorNumber) {
+    }
+
+    public record AffectedRequest(@Size(max = 2000) String details) {
+    }
+
+    public record BulkRequest(@NotNull @Size(min = 1, max = 100) List<String> numbers,
+                              @NotNull com.resolveiq.incident.BulkActionService.Action action,
+                              java.util.Map<String, String> params) {
+    }
+
     public record IncidentDetail(String number, String title, String description, String status, String statusLabel,
                                  String priority, String priorityLabel, Double priorityScore, String priorityRationale,
                                  String priorityStrategy, Ref category, boolean autoClassified,
@@ -107,7 +148,8 @@ public final class IncidentDtos {
                                  EscalationView escalation, ResolutionView resolution, FeedbackView feedback,
                                  DuplicateView duplicateOf, Instant createdAt, Instant updatedAt, Instant closedAt,
                                  String closureNote, List<NoteView> notes, Set<IncidentAction> availableActions,
-                                 Set<String> nextStatuses) {
+                                 Set<String> nextStatuses, MajorView major, MajorParentView majorParent,
+                                 Long knowledgeArticleId, long attachmentCount) {
     }
 
     public record SimilarIncidentView(String number, String title, String status, String service, double score,

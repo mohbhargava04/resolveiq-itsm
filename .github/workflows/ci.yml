@@ -31,7 +31,7 @@ jobs:
             backend/target/site/jacoco
 
   frontend:
-    name: Frontend typecheck & build
+    name: Frontend tests, typecheck & build
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -44,4 +44,6 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
+      - name: Unit and component tests
+        run: npm test
       - run: npm run build

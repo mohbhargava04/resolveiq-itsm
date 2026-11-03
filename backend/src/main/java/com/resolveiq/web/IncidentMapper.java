@@ -13,6 +13,14 @@ import com.resolveiq.user.domain.User;
 import com.resolveiq.web.dto.CommonDtos.PersonRef;
 import com.resolveiq.web.dto.CommonDtos.Ref;
 import com.resolveiq.web.dto.IncidentDtos.AuditEntry;
+import com.resolveiq.attachment.AttachmentRepository;
+import com.resolveiq.incident.domain.MajorIncidentUpdate;
+import com.resolveiq.knowledge.KnowledgeArticleRepository;
+import com.resolveiq.web.dto.IncidentDtos.LinkedIncidentView;
+import com.resolveiq.web.dto.IncidentDtos.MajorIncidentBanner;
+import com.resolveiq.web.dto.IncidentDtos.MajorParentView;
+import com.resolveiq.web.dto.IncidentDtos.MajorUpdateView;
+import com.resolveiq.web.dto.IncidentDtos.MajorView;
 import com.resolveiq.web.dto.IncidentDtos.DuplicateView;
 import com.resolveiq.web.dto.IncidentDtos.EscalationView;
 import com.resolveiq.web.dto.IncidentDtos.FeedbackView;
@@ -27,6 +35,7 @@ import org.springframework.stereotype.Component;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -39,10 +48,17 @@ public class IncidentMapper {
 
     private final Clock clock;
     private final IncidentAccessPolicy accessPolicy;
+    private final KnowledgeArticleRepository articles;
+    private final AttachmentRepository attachments;
+    private final com.resolveiq.incident.IncidentRepository incidents;
 
-    public IncidentMapper(Clock clock, IncidentAccessPolicy accessPolicy) {
+    public IncidentMapper(Clock clock, IncidentAccessPolicy accessPolicy, KnowledgeArticleRepository articles,
+                          AttachmentRepository attachments, com.resolveiq.incident.IncidentRepository incidents) {
+        this.incidents = incidents;
         this.clock = clock;
         this.accessPolicy = accessPolicy;
+        this.articles = articles;
+        this.attachments = attachments;
     }
 
     public IncidentSummary toSummary(Incident i) {
@@ -54,7 +70,8 @@ public class IncidentMapper {
                 person(i.getReporter()), person(i.getAssignee()), i.getCreatedAt(), i.getUpdatedAt(),
                 i.slaStatus(now).name(), sla.getResponseDueAt(), sla.getResolutionDueAt(), remaining,
                 i.getEscalationLevel().name(),
-                i.getDuplicateOf() == null ? null : i.getDuplicateOf().getNumber(), i.isAutoClassified());
+                i.getDuplicateOf() == null ? null : i.getDuplicateOf().getNumber(), i.isAutoClassified(), i.isMajor(),
+                i.getMajorParent() == null ? null : i.getMajorParent().getNumber());
     }
 
     public IncidentDetail toDetail(Incident i, User viewer) {
@@ -94,7 +111,45 @@ public class IncidentMapper {
                 i.getAffectedUsers(), person(i.getReporter()), person(i.getAssignee()), i.getAssignedAt(),
                 i.getAssignmentStrategy(), slaView, escalation, resolution, feedback, duplicate, i.getCreatedAt(),
                 i.getUpdatedAt(), i.getClosedAt(), i.getClosureNote(), notes, i.availableActions(Actor.of(viewer)),
-                next);
+                next, majorView(i, showInternal), majorParentView(i.getMajorParent()),
+                articles.findFirstBySourceIncidentId(i.getId()).map(a -> a.getId()).orElse(null),
+                attachments.countByIncident(i.getId()));
+    }
+
+    private MajorView majorView(Incident i, boolean staff) {
+        if (!i.isMajor()) {
+            return null;
+        }
+        List<MajorUpdateView> updates = i.getMajorUpdates().stream().map(IncidentMapper::update).toList();
+        List<LinkedIncidentView> linked = staff ? incidents.findLinkedTo(i.getId()).stream()
+                .map(c -> new LinkedIncidentView(c.getNumber(), c.getTitle(), c.getStatus().name(), person(c.getReporter())))
+                .toList() : List.of();
+        return new MajorView(i.getMajorStage().name(), i.getMajorStage().label(), i.getMajorDeclaredAt(), updates, linked);
+    }
+
+    private static MajorParentView majorParentView(Incident parent) {
+        if (parent == null) {
+            return null;
+        }
+        MajorUpdateView latest = parent.getMajorUpdates().isEmpty() ? null : update(parent.getMajorUpdates().getFirst());
+        return new MajorParentView(parent.getNumber(), parent.getTitle(),
+                parent.getMajorStage() == null ? null : parent.getMajorStage().name(),
+                parent.getMajorStage() == null ? null : parent.getMajorStage().label(), latest);
+    }
+
+    public MajorIncidentBanner toBanner(Incident i, User viewer) {
+        MajorUpdateView latest = i.getMajorUpdates().isEmpty() ? null : update(i.getMajorUpdates().getFirst());
+        List<Incident> linked = incidents.findLinkedTo(i.getId());
+        boolean affectsMe = i.getReporter().getId().equals(viewer.getId())
+                || linked.stream().anyMatch(c -> c.getReporter().getId().equals(viewer.getId()));
+        return new MajorIncidentBanner(i.getNumber(), i.getTitle(), ref(i.getService()), name(i.getPriority()),
+                i.getMajorStage().name(), i.getMajorStage().label(), i.getMajorDeclaredAt(), latest,
+                linked.size(), affectsMe);
+    }
+
+    static MajorUpdateView update(MajorIncidentUpdate u) {
+        return new MajorUpdateView(u.getStage().name(), u.getStage().label(), u.getMessage(), u.getAuthorName(),
+                u.getCreatedAt());
     }
 
     public SimilarIncidentView toSimilar(SimilarIncident s) {

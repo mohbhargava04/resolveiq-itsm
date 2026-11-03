@@ -62,6 +62,18 @@ public class LiveUpdateHub {
                 .forEach(c -> send(c, eventName, payload)));
     }
 
+    /** Sends to every connected browser, employees included (major-incident status banners). */
+    public void broadcastToAll(String eventName, Object payload) {
+        connections.values().forEach(set -> set.forEach(c -> send(c, eventName, payload)));
+    }
+
+    /** Tells dashboards and the reporter that something on an incident changed outside its lifecycle. */
+    public void incidentTouched(String number, Long reporterId, String what) {
+        Map<String, Object> payload = Map.of("number", number, "event", what);
+        broadcastToStaff("incident", payload);
+        sendToUser(reporterId, "incident", payload);
+    }
+
     public int connectionCount() {
         return connections.values().stream().mapToInt(Set::size).sum();
     }

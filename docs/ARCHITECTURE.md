@@ -14,9 +14,11 @@ flowchart TB
 
     subgraph API["Spring Boot application (Java 21)"]
         direction TB
-        SEC["Security filter chain<br/>JWT · role hierarchy · CORS · headers"]
+        RL["Rate limiter<br/>token buckets per address"]
+        SEC["Security filter chain<br/>JWT + session check · role hierarchy · CSP · headers"]
         WEB["REST controllers + DTOs<br/>GlobalExceptionHandler (RFC 7807)"]
-        APP["Application services<br/>IncidentService · AssignmentService · CatalogService · ReportService"]
+        APP["Application services<br/>IncidentService · AssignmentService · KnowledgeService<br/>AttachmentService · InboundEmailService · BulkActionService"]
+        AUTH["Sign-in services<br/>AuthService · SessionService · MfaService<br/>FederatedSignInService"]
         DOM["Domain model<br/>Incident (State pattern) · User hierarchy · SlaRecord · events"]
         subgraph ENG["Engines"]
             PRI["Priority strategies"]
@@ -33,9 +35,14 @@ flowchart TB
         DB[("PostgreSQL 16<br/>Flyway migrations")]
         SMTP["SMTP server"]
         SMS["Twilio SMS"]
+        GOOGLE["Google OpenID Connect"]
+        INBOX["Mail provider<br/>inbound webhook"]
     end
 
-    UI -- "REST / JSON + JWT" --> SEC --> WEB --> APP
+    UI -- "REST / JSON + JWT<br/>refresh cookie" --> RL --> SEC --> WEB --> APP
+    WEB --> AUTH
+    AUTH -- "Adapter (IdentityProvider)" --> GOOGLE
+    INBOX -- "shared-secret webhook" --> WEB
     OBS -. SSE live events .-> UI
     APP --> DOM
     APP --> ENG
@@ -416,23 +423,23 @@ sequenceDiagram
 | **Abstraction** | `PriorityStrategy`, `AssignmentStrategy`, `NotificationChannel`, `EmailGateway`, `CategoryClassifier`, `IncidentState` describe *what*, hiding *how*. `IncidentService.report()` hides a 10-step workflow behind one call. |
 | **Inheritance** (genuine *is-a*) | `TeamLead` **is a** `Technician`; `ItManager` **is an** `Administrator`; every user **is a** `User`. All entities extend `BaseEntity` (identity, timestamps, optimistic locking). Inheritance is *not* used where *has-a* fits (e.g. SLA is composed, not inherited). |
 | **Polymorphism** | `user.getRole()`, `canHandleIncidents()` differ per subclass; any `PriorityStrategy` / `AssignmentStrategy` / `NotificationChannel` / `EscalationHandler` can be substituted at runtime. |
-| **Interfaces** | 9 contracts: `IncidentState`, `PriorityStrategy`, `AssignmentStrategy`, `IncidentObserver`, `NotificationChannel`, `EmailGateway`, `SmsGateway`, `CategoryClassifier`, plus Spring Data repository interfaces. |
+| **Interfaces** | 11 contracts: `IncidentState`, `PriorityStrategy`, `AssignmentStrategy`, `IncidentObserver`, `NotificationChannel`, `EmailGateway`, `SmsGateway`, `CategoryClassifier`, `IdentityProvider`, `MalwareScanner`, plus Spring Data repository interfaces. |
 | **Composition** | `Incident` owns its `SlaRecord`, `Resolution`, `Feedback` (embedded) and `IncidentNote`s (cascade + orphan removal) — they cannot exist without it. |
 | **Association / Aggregation** | `Incident → reporter`, `Incident → assignee` (association); `Incident → ItService/Category` (aggregation: shared, independent life cycle); `ItService ↔ ItService` dependency graph; `Technician → TeamLead`. |
 | **Exception handling** | 17 custom exceptions under `ItsmException`, each with an `ErrorCode` → HTTP status; one `GlobalExceptionHandler` produces RFC 7807 JSON. Database outages → 503, concurrent edits → 409 (optimistic locking). |
 | **Collections** | `EnumMap` (state registry, settings), `EnumSet` (allowed transitions, channels), `TreeSet` (sorted unique skills), `LinkedHashMap` (ordered reports), `CopyOnWriteArrayList` (thread-safe observer list), `ConcurrentHashMap` (live connections), `ArrayDeque` (BFS over the dependency graph), sparse `HashMap` vectors (TF-IDF). |
 | **Generics** | `SimilarityEngine.rank<T>(...)`, `PageResponse<T>`, repositories. |
-| **Modern Java** | Records for value objects and DTOs; a **sealed interface** for events with exhaustive pattern-matching `switch`; text blocks; `List.getFirst()` (Java 21). |
+| **Modern Java** | Records for value objects and DTOs; **sealed interfaces** for events and for sign-in results (`SignedIn` / `MfaRequired`) with exhaustive pattern-matching `switch`; text blocks; `List.getFirst()` (Java 21). |
 
 ## 7. Design patterns (9)
 
 | Pattern | Where | Why |
 |---|---|---|
 | **Strategy** | `PriorityStrategy` (2), `AssignmentStrategy` (5) | Algorithms are swapped at runtime from the admin settings without redeploying |
-| **State** | `IncidentState` + 9 state classes | Lifecycle rules live in one class per state; illegal transitions impossible |
-| **Observer** | `IncidentEventPublisher` + 4 `IncidentObserver`s | Audit, notifications, live dashboard and ML retraining react to events without the incident knowing them |
+| **State** | `IncidentState` + 9 state classes | Lifecycle rules live in one class per state; illegal transitions impossible. Week 3 added `resolveWithMajorIncident`, which only the active states allow |
+| **Observer** | `IncidentEventPublisher` + 4 `IncidentObserver`s | Audit, notifications, live dashboard and ML retraining react to events without the incident knowing them. Major-incident events reach everyone through the same observers (banner, e-mail, audit) |
 | **Factory** | `UserFactory`, `IncidentFactory`, `NotificationChannelFactory` | Centralises construction (right subclass, hashed password, unique number, enabled channels) |
-| **Adapter** | `EmailGateway` ← `SmtpEmailGateway`/`ConsoleEmailGateway`; `SmsGateway` ← `TwilioSmsGateway`/`SimulatedSmsGateway` | Third-party APIs plug in behind our own interface; simulation and real delivery are interchangeable |
+| **Adapter** | `EmailGateway` ← `SmtpEmailGateway`/`ConsoleEmailGateway`; `SmsGateway` ← `TwilioSmsGateway`/`SimulatedSmsGateway`; `IdentityProvider` ← `GoogleIdentityProvider` (tests: a fake provider); `MalwareScanner` ← `SignatureMalwareScanner` | Third-party APIs plug in behind our own interface; simulation and real delivery are interchangeable, and tests never call Google |
 | **Chain of Responsibility** | `EscalationHandler` chain | Team Lead → System Admin → IT Manager; add a level by adding a handler |
 | **Template Method** | `AbstractAssignmentStrategy.rank()`, `AbstractNotificationChannel.deliver()` | Fixed algorithm skeleton, subclasses supply only the varying step |
 | **Repository** | Spring Data repositories | Domain asks for data by intent; persistence technology is replaceable |
@@ -450,3 +457,47 @@ sequenceDiagram
 | New escalation level | One `EscalationHandler`, linked into the chain |
 | New reaction to incident activity (e.g. webhook) | One `IncidentObserver` |
 | New lifecycle state (e.g. ON_HOLD) | One state class + registry entry |
+| Sign in with Microsoft / Okta | One `IdentityProvider` adapter; the sign-in rules (domains, roles, account linking) are reused |
+| Real antivirus (ClamAV, cloud scanner) | One `MalwareScanner` adapter |
+| New bulk action | One enum value + one case in `BulkActionService` |
+
+## 9. Security design
+
+Security is part of the design, not a layer added at the end. The key decisions:
+
+- **Stateless access, stateful sessions.** Access tokens are short-lived signed JWTs (no database lookup to
+  verify the signature), but every request is also checked against a small session table and the user's
+  *token version*, so sign-out, deactivation and role changes take effect immediately.
+- **Roles come from the database, never from the token.** A token says *who*; the database says *what they
+  may do*.
+- **Rate limiting runs before Spring Security**, so floods are rejected before any password hashing.
+- **Every outside input is untrusted**: uploads are typed by their bytes, e-mails by a shared secret,
+  Google responses by `state`, `nonce` and PKCE.
+
+The full OWASP Top 10:2025 mapping, threat model and the tests behind each claim are in
+[SECURITY.md](SECURITY.md).
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant B as Browser
+    participant R as Rate limiter
+    participant A as AuthController
+    participant S as SessionService
+    participant DB as Database
+    B->>R: POST /api/auth/login (e-mail, password)
+    R->>A: within limit
+    A->>DB: load user, BCrypt check, lockout check
+    alt 2FA enabled
+        A-->>B: { mfaRequired, challenge }
+        B->>A: POST /api/auth/mfa/verify (code, challenge)
+    end
+    A->>S: open session (family id)
+    S->>DB: store SHA-256(refresh token)
+    A-->>B: access token (15 min, kept in memory)<br/>Set-Cookie riq_refresh (HttpOnly, Strict)
+    Note over B,S: 14 minutes later
+    B->>A: POST /api/auth/refresh + cookie + X-Requested-With
+    A->>S: rotate: old token used, new one issued
+    S-->>B: new access token + new cookie
+    Note over S: an old token presented again = theft → whole family revoked
+```

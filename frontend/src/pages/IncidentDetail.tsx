@@ -1,22 +1,24 @@
 import { useState, type ReactNode } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import {
-  ArrowUpRight, BookOpenCheck, ChevronRight, CircleCheck, Copy, Hand, Lightbulb, Lock, MessageSquare, Play,
-  RotateCcw, Sparkles, Star, UserPlus, Wrench,
+  ArrowUpRight, BookOpenCheck, ChevronRight, CircleCheck, Copy, Hand, Library, Lightbulb, Link2, MessageSquare, Play,
+  RotateCcw, Siren, Sparkles, Star, UserPlus, Wrench,
 } from 'lucide-react'
 import { api, ApiError } from '@/lib/api'
 import { useUser } from '@/lib/auth'
 import { ago, cn, duration, fullDate, humanise, LEVEL_LABEL, remaining, when } from '@/lib/format'
 import type {
-  AuditEntry, IncidentAction, IncidentDetail as Incident, NoteView, Priority, SimilarIncident, SlaRisk, SuggestedResolution,
+  AuditEntry, IncidentAction, IncidentDetail as Incident, Priority, SimilarIncident, SlaRisk, SuggestedResolution,
 } from '@/lib/types'
-import { Avatar, Button, Dialog, EmptyState, ErrorNote, Field, Input, Select, Skeleton, Textarea } from '@/components/ui'
+import { Avatar, Button, Dialog, EmptyState, Field, Input, Select, Skeleton, Textarea } from '@/components/ui'
 import { EscalationTag, PriorityBadge, RiskTag, SlaFuse, StatusBadge } from '@/components/incident-bits'
 import { AssignDialog } from '@/components/AssignDialog'
+import { Attachments, Conversation, DeclareMajorDialog, LinkMajorDialog, MajorPanel, MajorParentNotice, MajorUpdateDialog } from '@/components/incident-collab'
 
-type DialogKind = 'assign' | 'requestInfo' | 'resolve' | 'reopen' | 'escalate' | 'reprioritise' | 'duplicate' | null
+type DialogKind = 'assign' | 'requestInfo' | 'resolve' | 'reopen' | 'escalate' | 'reprioritise' | 'duplicate'
+  | 'declareMajor' | 'majorUpdate' | 'linkMajor' | null
 
 export default function IncidentDetail() {
   const { number = '' } = useParams()
@@ -41,12 +43,20 @@ export default function IncidentDetail() {
     onError: (err) => toast.error(err instanceof Error ? err.message : 'Action failed'),
   })
   const run = (path: string, success: string, body?: unknown) => action.mutate({ path, body, success })
+  const applied = (success: string) => (d: Incident) => {
+    qc.setQueryData(['incident', number], d)
+    qc.invalidateQueries({ queryKey: ['incident', number, 'audit'] })
+    qc.invalidateQueries({ queryKey: ['major-incidents'] })
+    qc.invalidateQueries({ queryKey: ['dashboard'] })
+    toast.success(success)
+    setDialog(null)
+  }
 
   if (incident.isLoading) return <DetailSkeleton />
   if (incident.error) {
     const notFound = incident.error instanceof ApiError && incident.error.status === 404
     return (
-      <EmptyState title={notFound ? `${number} doesn't exist or isn't visible to you` : 'Could not load this incident'}
+      <EmptyState heading="h1" title={notFound ? `${number} doesn't exist or isn't visible to you` : 'Could not load this incident'}
         action={<Link to="/incidents"><Button>Back to incidents</Button></Link>}>
         {notFound ? 'Employees can only open incidents they reported.' : (incident.error as Error).message}
       </EmptyState>
@@ -79,6 +89,7 @@ export default function IncidentDetail() {
               )}
               <span>Reported by {i.reporter.name} {ago(i.createdAt)}</span>
               <EscalationTag level={i.escalation.level} />
+              {i.major && <span className="inline-flex items-center gap-1 rounded-md bg-p1 px-1.5 py-0.5 text-xs font-semibold text-p1-ink"><Siren className="size-3" />Major incident</span>}
             </div>
           </div>
           <ActionBar i={i} can={can} busy={action.isPending} run={run} open={setDialog} />
@@ -87,6 +98,9 @@ export default function IncidentDetail() {
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="min-w-0 space-y-6">
+          {i.major && <MajorPanel i={i} canUpdate={can('POST_MAJOR_UPDATE')} onUpdate={() => setDialog('majorUpdate')} />}
+          {i.majorParent && <MajorParentNotice i={i} />}
+
           <SlaPanel i={i} />
 
           {i.duplicateOf && <DuplicateNotice i={i} canAct={can('MARK_DUPLICATE')} onConfirm={() => setDialog('duplicate')} onDismiss={() => run('duplicate/dismiss', 'Duplicate warning dismissed')} />}
@@ -102,12 +116,14 @@ export default function IncidentDetail() {
               <h2 className="text-[15px] font-semibold">Description</h2>
               <p className="mt-2 whitespace-pre-wrap text-[14px] leading-relaxed text-ink-2">{i.description}</p>
             </div>
-            <ActivityTabs i={i} staff={staff} canNote={can('ADD_NOTE')} canInternal={can('ADD_INTERNAL_NOTE')} />
+            <ActivityTabs i={i} canNote={can('ADD_NOTE')} canInternal={can('ADD_INTERNAL_NOTE')} />
           </section>
         </div>
 
-        <aside className="space-y-4">
+        <aside aria-label="Incident details" className="space-y-4">
           <DetailsCard i={i} />
+          <Attachments i={i} canUpload={i.status !== 'CLOSED' && (staff || i.reporter.id === user.id)} />
+          {can('PUBLISH_ARTICLE') && <KnowledgeCard i={i} />}
           {staff && i.status !== 'CLOSED' && <RiskCard number={i.number} />}
           {staff && <SuggestionsCard number={i.number} canResolve={can('RESOLVE')} onUse={(r) => { setPrefill({ summary: r.summary, rootCause: r.rootCause }); setDialog('resolve') }} />}
           {staff && i.status !== 'CLOSED' && <SimilarCard number={i.number} />}
@@ -128,6 +144,9 @@ export default function IncidentDetail() {
         onSubmit={(summary, rootCause) => run('resolve', 'Resolved; the reporter has been asked to confirm', { summary, rootCause })} />
       <ReprioritiseDialog open={dialog === 'reprioritise'} current={i.priority} onClose={() => setDialog(null)} busy={action.isPending}
         onSubmit={(priority, reason) => run('reprioritise', 'Priority updated', { priority, reason })} />
+      {dialog === 'declareMajor' && <DeclareMajorDialog i={i} onClose={() => setDialog(null)} onDone={applied('Major incident declared; everyone affected has been alerted')} />}
+      {dialog === 'majorUpdate' && <MajorUpdateDialog i={i} onClose={() => setDialog(null)} onDone={applied('Update sent to everyone affected')} />}
+      {dialog === 'linkMajor' && <LinkMajorDialog i={i} onClose={() => setDialog(null)} onDone={applied('Linked; the reporter will get the major incident’s updates')} />}
       <DuplicateDialog open={dialog === 'duplicate'} initial={i.duplicateOf?.number ?? ''} onClose={() => setDialog(null)} busy={action.isPending}
         onSubmit={(parentNumber) => run('duplicate', `Closed as a duplicate of ${parentNumber}`, { parentNumber })} />
     </div>
@@ -153,6 +172,8 @@ function ActionBar({ i, can, busy, run, open }: {
   if (can('ESCALATE')) secondary.push(<Button key="esc" variant="ghost" icon={<ArrowUpRight className="size-4" />} onClick={() => open('escalate')}>Escalate</Button>)
   if (can('REPRIORITISE')) secondary.push(<Button key="prio" variant="ghost" onClick={() => open('reprioritise')}>Change priority</Button>)
   if (can('MARK_DUPLICATE')) secondary.push(<Button key="dup" variant="ghost" icon={<Copy className="size-4" />} onClick={() => open('duplicate')}>Duplicate</Button>)
+  if (can('LINK_TO_MAJOR')) secondary.push(<Button key="linkmaj" variant="ghost" icon={<Link2 className="size-4" />} onClick={() => open('linkMajor')}>Link to major</Button>)
+  if (can('DECLARE_MAJOR')) secondary.push(<Button key="declare" variant="ghost" className="text-p1 hover:bg-p1-soft hover:text-p1" icon={<Siren className="size-4" />} onClick={() => open('declareMajor')}>Declare major</Button>)
   if (!primary.length && !secondary.length) return null
   return <div className="flex flex-wrap items-center gap-2">{secondary}{primary}</div>
 }
@@ -288,7 +309,7 @@ function FeedbackBox({ busy, onSubmit }: { busy: boolean; onSubmit: (rating: num
   )
 }
 
-function ActivityTabs({ i, staff, canNote, canInternal }: { i: Incident; staff: boolean; canNote: boolean; canInternal: boolean }) {
+function ActivityTabs({ i, canNote, canInternal }: { i: Incident; canNote: boolean; canInternal: boolean }) {
   const [tab, setTab] = useState<'activity' | 'history'>('activity')
   return (
     <div className="mt-5 border-t border-line">
@@ -297,77 +318,13 @@ function ActivityTabs({ i, staff, canNote, canInternal }: { i: Incident; staff: 
           <button key={t} role="tab" aria-selected={tab === t} onClick={() => setTab(t)}
             className={cn('-mb-px border-b-2 py-3 text-[13.5px] font-medium transition-colors cursor-pointer',
               tab === t ? 'border-accent text-ink' : 'border-transparent text-muted hover:text-ink')}>
-            {t === 'activity' ? `Conversation and work log (${i.notes.length})` : 'Audit history'}
+            {t === 'activity' ? `Conversation (${i.notes.filter((n) => n.type !== 'SYSTEM').length})` : 'Audit history'}
           </button>
         ))}
       </div>
       <div className="px-5 pb-5 pt-4">
-        {tab === 'activity' ? <Notes i={i} staff={staff} canNote={canNote} canInternal={canInternal} /> : <History number={i.number} />}
+        {tab === 'activity' ? <Conversation i={i} canNote={canNote} canInternal={canInternal} /> : <History number={i.number} />}
       </div>
-    </div>
-  )
-}
-
-const NOTE_LABEL: Record<NoteView['type'], string> = {
-  INVESTIGATION: 'Investigation', COMMENT: 'Comment', INFO_REQUEST: 'Asked the reporter', INFO_RESPONSE: 'Reporter replied',
-  RESOLUTION: 'Resolution', SYSTEM: 'System',
-}
-
-function Notes({ i, staff, canNote, canInternal }: { i: Incident; staff: boolean; canNote: boolean; canInternal: boolean }) {
-  const qc = useQueryClient()
-  const [text, setText] = useState('')
-  const [internal, setInternal] = useState(false)
-  const add = useMutation({
-    mutationFn: () => api.post<Incident>(`/incidents/${i.number}/notes`, {
-      type: staff ? 'INVESTIGATION' : 'COMMENT', content: text.trim(), internal: canInternal && internal,
-    }),
-    onSuccess: (d) => {
-      qc.setQueryData(['incident', i.number], d)
-      qc.invalidateQueries({ queryKey: ['incident', i.number, 'audit'] })
-      setText('')
-    },
-  })
-  return (
-    <div>
-      {i.notes.length === 0 && <p className="text-[13px] text-muted">No updates yet.</p>}
-      <ol className="space-y-4">
-        {i.notes.map((n) => {
-          const system = n.type === 'SYSTEM'
-          return (
-            <li key={n.id} className="flex gap-3">
-              {system ? (
-                <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-surface-2 text-faint"><Sparkles className="size-3.5" /></span>
-              ) : <Avatar name={n.author} size={28} />}
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-baseline gap-x-2 text-xs text-muted">
-                  <span className="text-[13px] font-medium text-ink">{system ? 'ResolveIQ' : n.author}</span>
-                  <span>{NOTE_LABEL[n.type]}</span>
-                  {n.internal && <span className="inline-flex items-center gap-0.5 text-p2"><Lock className="size-3" />Internal</span>}
-                  <span className="tabular">{when(n.createdAt)}</span>
-                </div>
-                <p className={cn('mt-1 whitespace-pre-wrap text-[13.5px] leading-relaxed', system ? 'text-muted' : 'text-ink-2',
-                  n.internal && 'rounded-lg bg-p2-soft/60 px-3 py-2')}>{n.content}</p>
-              </div>
-            </li>
-          )
-        })}
-      </ol>
-      {canNote && (
-        <form className="mt-5 space-y-2" onSubmit={(e) => { e.preventDefault(); if (text.trim()) add.mutate() }}>
-          <Textarea rows={2} value={text} onChange={(e) => setText(e.target.value)} aria-label="Add a note"
-            placeholder={staff ? 'Add an investigation note…' : 'Add a comment for the technician…'} />
-          <div className="flex items-center justify-between gap-3">
-            {canInternal ? (
-              <label className="flex cursor-pointer items-center gap-2 text-[13px] text-muted">
-                <input type="checkbox" checked={internal} onChange={(e) => setInternal(e.target.checked)} className="accent-[var(--accent)]" />
-                Internal (hidden from the reporter)
-              </label>
-            ) : <span />}
-            <Button type="submit" size="sm" variant="primary" loading={add.isPending} disabled={!text.trim()}>Add note</Button>
-          </div>
-          {add.error && <ErrorNote error={add.error} />}
-        </form>
-      )}
     </div>
   )
 }
@@ -422,6 +379,26 @@ function DetailsCard({ i }: { i: Incident }) {
           <ul className="mt-2 space-y-1">{i.priorityRationale.split('; ').map((f) => <li key={f}>{f}</li>)}</ul>
           <p className="mt-2">Calculated by {i.priorityStrategy}</p>
         </details>
+      )}
+    </section>
+  )
+}
+
+function KnowledgeCard({ i }: { i: Incident }) {
+  const navigate = useNavigate()
+  return (
+    <section className="rounded-xl border border-line bg-surface p-4">
+      <h2 className="mb-1 flex items-center gap-2 text-[13.5px] font-semibold"><Library className="size-4 text-accent-text" />Knowledge base</h2>
+      {i.knowledgeArticleId ? (
+        <>
+          <p className="text-xs text-muted">An article was written from this incident.</p>
+          <Link to={`/kb/${i.knowledgeArticleId}`} className="mt-2 inline-block text-[13px] font-medium text-accent-text hover:underline">Open the article</Link>
+        </>
+      ) : (
+        <>
+          <p className="text-xs text-muted">Turn this fix into a self-help article so the next person can solve it without a ticket.</p>
+          <Button size="sm" className="mt-3" onClick={() => navigate(`/kb/new?fromIncident=${i.number}`)}>Write an article</Button>
+        </>
       )}
     </section>
   )

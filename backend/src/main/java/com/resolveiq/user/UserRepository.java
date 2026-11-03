@@ -18,6 +18,17 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     boolean existsByEmailIgnoreCase(String email);
 
+    Optional<User> findByGoogleSubject(String googleSubject);
+
+    @Query("select count(u) from User u where u.active = true and u.mfaEnabled = true and type(u) in (Administrator, ItManager)")
+    long countPrivilegedWithMfa();
+
+    @Query("select count(u) from User u where u.active = true and type(u) in (Administrator, ItManager)")
+    long countPrivileged();
+
+    @Query("select count(u) from User u where u.lockedUntil > :now")
+    long countLocked(java.time.Instant now);
+
     @Query("select t from Technician t where t.active = true order by t.fullName")
     List<Technician> findActiveTechnicians();
 

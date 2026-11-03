@@ -1,6 +1,8 @@
 package com.resolveiq.web;
 
 import com.resolveiq.common.exception.ResourceNotFoundException;
+import com.resolveiq.common.exception.SessionExpiredException;
+import com.resolveiq.live.LiveTicketService;
 import com.resolveiq.live.LiveUpdateHub;
 import com.resolveiq.notification.ChannelType;
 import com.resolveiq.notification.Notification;
@@ -42,12 +44,14 @@ public class NotificationController {
     private final NotificationRepository notifications;
     private final CurrentUserService currentUser;
     private final LiveUpdateHub hub;
+    private final LiveTicketService tickets;
 
     public NotificationController(NotificationRepository notifications, CurrentUserService currentUser,
-                                  LiveUpdateHub hub) {
+                                  LiveUpdateHub hub, LiveTicketService tickets) {
         this.notifications = notifications;
         this.currentUser = currentUser;
         this.hub = hub;
+        this.tickets = tickets;
     }
 
     @GetMapping
@@ -85,10 +89,18 @@ public class NotificationController {
         return Map.of("updated", notifications.markAllRead(me.getId()));
     }
 
-    @GetMapping(path = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    @Operation(summary = "Server-sent events: live notifications and incident updates (pass ?access_token=)")
-    public SseEmitter stream() {
+    @PostMapping("/stream-ticket")
+    @Transactional(readOnly = true)
+    @Operation(summary = "One-time, 60-second ticket for opening the live stream (EventSource cannot send headers)")
+    public Map<String, String> streamTicket() {
         User me = currentUser.require();
-        return hub.connect(me.getId(), me.getRole());
+        return Map.of("ticket", tickets.issue(me.getId(), me.getRole()));
+    }
+
+    @GetMapping(path = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @Operation(summary = "Server-sent events: live notifications and incident updates (pass ?ticket=)")
+    public SseEmitter stream(@RequestParam String ticket) {
+        LiveTicketService.Holder holder = tickets.redeem(ticket).orElseThrow(SessionExpiredException::new);
+        return hub.connect(holder.userId(), holder.role());
     }
 }

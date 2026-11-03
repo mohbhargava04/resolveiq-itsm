@@ -1,6 +1,7 @@
-# Production-like stack: PostgreSQL + ResolveIQ API.
+# Production-like stack: PostgreSQL + ResolveIQ (frontend and API built from source in one image).
 #   docker compose up --build
-# API: http://localhost:8080   Swagger UI: http://localhost:8080/swagger-ui.html
+# App: http://localhost:8080
+# Secrets below are for local use only; a real deployment sets its own (see docs/DEPLOYMENT.md).
 services:
   db:
     image: postgres:16-alpine
@@ -19,7 +20,7 @@ services:
       retries: 10
 
   api:
-    build: ./backend
+    build: .
     depends_on:
       db:
         condition: service_healthy
@@ -28,8 +29,14 @@ services:
       ITSM_DB_URL: jdbc:postgresql://db:5432/resolveiq
       ITSM_DB_USERNAME: resolveiq
       ITSM_DB_PASSWORD: resolveiq
-      ITSM_JWT_SECRET: change-this-to-a-long-random-secret-in-production-please
+      ITSM_JWT_SECRET: local-compose-jwt-secret-0123456789abcdef0123456789
+      ITSM_DATA_KEY: local-compose-data-key-0123456789abcdef0123456789
+      ITSM_PUBLIC_URL: http://localhost:8080
+      ITSM_DEMO_MODE: "true"
       ITSM_ALLOWED_ORIGINS: http://localhost:5173,http://localhost:3000
+      # optional: Google sign-in (docs/DEPLOYMENT.md explains how to get these)
+      ITSM_GOOGLE_CLIENT_ID: ${ITSM_GOOGLE_CLIENT_ID:-}
+      ITSM_GOOGLE_CLIENT_SECRET: ${ITSM_GOOGLE_CLIENT_SECRET:-}
     ports:
       - "8080:8080"
 

@@ -47,6 +47,12 @@ public interface IncidentState {
 
     void closeAsDuplicate(Incident incident, Incident parent, Actor actor, Instant at);
 
+    /**
+     * System cascade: the major incident this one is linked to has been resolved, so this one is
+     * resolved with the same fix, from whichever working state it is in. The reporter then verifies as usual.
+     */
+    void resolveWithMajorIncident(Incident incident, Incident major, Resolution resolution, Actor actor, Instant at);
+
     // ---- capabilities that do not change state -----------------------------------------------
 
     /** Title/description/impact etc. may still be edited. */

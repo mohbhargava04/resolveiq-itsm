@@ -163,3 +163,42 @@ usually take much longer than the time left. Shown on technician queues and the 
 Every resolved incident is a knowledge-base article. For an open incident the same TF-IDF engine ranks resolved
 incidents: `relevance = 0.8 × text similarity + 0.1 × same service + 0.1 × same category`, returning the top
 three fixes with their root causes.
+
+## 10. Self-help deflection (intelligent feature H)
+
+While an employee types a report, the same TF-IDF engine searches the **knowledge base** (published,
+employee-facing articles only):
+
+```
+relevance = 0.85 × text similarity + 0.15 × (article is for the service picked in the form)
+show if relevance ≥ 0.12, best 3 first
+```
+
+If the employee clicks **"This fixed it"**, no incident is created and the article's *deflection* counter
+goes up. Deflections, views and helpful/unhelpful votes (one per person) feed the manager's *Self-help* report,
+which also lists the least helpful articles so they can be rewritten. Browsing and searching the knowledge
+base uses the same similarity plus a +0.3 bonus when the words appear in the title.
+
+Technicians can turn any resolved incident into a draft article in one click (title, symptoms, fix and root
+cause pre-filled), so the knowledge base grows from real fixes.
+
+## 11. Major-incident suggestion (extends feature B)
+
+Each correlation cluster (§6) on the command centre suggests which incident should become the **major
+incident**: the one reported against the cluster's root-cause service itself, otherwise the earliest report.
+A team lead can declare it with one click, which links every other incident in the cluster. From then on:
+
+- status updates (*Investigating → Identified → Monitoring*) go to everyone affected and appear in a banner
+  for all users;
+- employees who report the same problem can press **"I'm affected too"** instead of filing a new ticket;
+- resolving the major incident resolves every linked incident with the same fix (a State-pattern operation,
+  `resolveWithMajorIncident`, that only active states allow).
+
+## 12. Routing e-mailed reports
+
+An e-mail whose subject contains `[INC-1042]` is matched to that incident: if the incident is waiting for the
+sender's answer it becomes the answer (and the SLA clock restarts), otherwise a comment. Quoted earlier
+messages are stripped. An e-mail without a reference opens a new incident; its service is the catalogue entry
+whose name and description are most similar to the e-mail (TF-IDF, threshold 0.08, falling back to *Devices*).
+The new incident then goes through the normal pipeline — classification, priority, duplicate check, assignment.
+

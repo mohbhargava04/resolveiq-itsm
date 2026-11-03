@@ -1,0 +1,41 @@
+# Dependabot opens a pull request when a library we use gets a security fix or a new version.
+# Security updates are raised straight away; routine version updates are grouped weekly so they
+# don't flood the team with pull requests.
+version: 2
+updates:
+  - package-ecosystem: maven
+    directory: /backend
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      spring:
+        patterns: ["org.springframework*", "io.spring*"]
+      everything-else:
+        patterns: ["*"]
+        exclude-patterns: ["org.springframework*", "io.spring*"]
+
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      react:
+        patterns: ["react", "react-dom", "@types/react*", "react-router*"]
+      build-tools:
+        patterns: ["vite", "@vitejs/*", "typescript", "tailwindcss", "@tailwindcss/*", "vitest", "@testing-library/*", "jsdom"]
+      everything-else:
+        patterns: ["*"]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: monthly

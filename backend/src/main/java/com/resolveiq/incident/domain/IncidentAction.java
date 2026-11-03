@@ -17,5 +17,9 @@ public enum IncidentAction {
     REPRIORITISE,
     ESCALATE,
     MARK_DUPLICATE,
-    FEEDBACK
+    FEEDBACK,
+    DECLARE_MAJOR,
+    LINK_TO_MAJOR,
+    POST_MAJOR_UPDATE,
+    PUBLISH_ARTICLE
 }

@@ -6,14 +6,14 @@
 |---|---|---|
 | Language (backend) | Java | 21 (LTS) |
 | Backend framework | Spring Boot (Web MVC, Data JPA, Security, Validation, Actuator, Mail) | 3.5 |
-| Authentication | JWT (Nimbus JOSE via Spring OAuth2 Resource Server), BCrypt | — |
+| Authentication | JWT access tokens (Nimbus JOSE via Spring OAuth2 Resource Server) + rotating refresh cookies, BCrypt, Google OpenID Connect (PKCE), TOTP (RFC 6238, own implementation), AES-256-GCM for stored secrets | — |
 | ORM / migrations | Hibernate 6 / Flyway | 6.6 / 11 |
 | Database | PostgreSQL (production), H2 in PostgreSQL mode (development & tests) | 16 / 2.3 |
 | Real-time | Server-Sent Events (`SseEmitter`) | — |
 | API documentation | springdoc-openapi (Swagger UI) | 2.8 |
-| Testing | JUnit 5, AssertJ, Mockito, Spring MockMvc, JaCoCo coverage | — |
-| Frontend | React + TypeScript + Vite (in progress) | 19 / 5 |
-| DevOps | Maven wrapper, Docker (multi-stage), Docker Compose, GitHub Actions CI | — |
+| Testing | JUnit 5, AssertJ, Mockito, Spring MockMvc, JaCoCo; Vitest + Testing Library (frontend); axe-core + Playwright (accessibility) | — |
+| Frontend | React + TypeScript + Vite + Tailwind CSS, TanStack Query | 19 / 5.9 / 7 / 4 |
+| DevOps | Maven wrapper, Docker (multi-stage), Docker Compose, Render Blueprint, GitHub Actions CI, CodeQL, Dependabot | — |
 | Integrations | SMTP (any provider), Twilio SMS — both behind adapters with simulation fallbacks | — |
 
 ## The 9 questions from the brief
@@ -86,7 +86,9 @@ became unmaintainable); **Jakarta EE / Quarkus** (valid, but smaller community r
 - A **modular monolith** (packages by capability) is right for a 4-person, 1-month project: one deployable, no
   network calls between modules, easy to debug — while module boundaries (incident, sla, assignment,
   notification…) would allow splitting into services later.
-- **Stateless JWT authentication** means any number of API instances can run behind a load balancer.
+- **Short-lived JWT access tokens** are verified without shared memory, so several API instances can run behind a
+  load balancer; sessions and refresh tokens live in the database, which every instance shares. (The rate
+  limiter is per instance today; a shared store such as Redis would be the next step.)
 
 ### 6. What alternatives did we consider?
 
@@ -95,7 +97,7 @@ became unmaintainable); **Jakarta EE / Quarkus** (valid, but smaller community r
 | Backend | Spring Boot | Plain JDK server, Quarkus, Node, Django | OOP in Java + production features |
 | Frontend | React + TS | JavaFX, Thymeleaf, Angular, Flutter | Web reach, live dashboards, ecosystem |
 | Database | PostgreSQL | MySQL, MongoDB, SQLite | Relational data, constraints, free |
-| Auth | JWT | Server sessions, OAuth2 provider | Stateless, scalable, simple for SPA |
+| Auth | Short JWT + rotating HttpOnly refresh cookie | Long-lived JWT in localStorage, server sessions, external identity service (Keycloak, Auth0) | Instant revocation and theft detection without a separate service; token never readable by scripts |
 | Real-time | Server-Sent Events | WebSockets, polling | One-way server push is all we need; works through proxies; simpler |
 | Classifier | Own Naive Bayes | External AI API, Weka | Explainable, offline, no cost; an LLM adapter can be added behind `CategoryClassifier` |
 | Architecture | Modular monolith | Microservices | Team size and timeline; boundaries preserved for later |
@@ -141,14 +143,16 @@ millions; SSE connections are held per server instance.
 | Threat / requirement | Mitigation |
 |---|---|
 | Password theft | BCrypt (cost 12, per-password salt); hashes never serialised to clients |
-| Brute force | Account locks for 15 minutes after 5 failed attempts; all attempts audited |
+| Brute force | Per-address rate limits (HTTP 429); account locks for 15 minutes after 5 failed passwords or 2FA codes; optional TOTP two-step verification; all attempts audited |
 | User enumeration | Same error and similar timing for unknown e-mail and wrong password |
 | Unauthorised operations | URL rules + `@PreAuthorize` with a role hierarchy (Manager > Admin > Team Lead > Technician) + domain-level checks (only the assignee can acknowledge) |
 | Data leakage between employees | Row-level rule: employees see only their incidents (others return 404, not 403); internal notes hidden from employees |
-| Token tampering / expiry | HMAC-SHA256 signed JWT, issuer validated, 8-hour expiry; deactivated users rejected immediately |
+| Token tampering / theft | HMAC-SHA256 signed JWT (issuer, type and expiry checked), 15-minute lifetime, kept in memory only; refresh token HttpOnly, rotated on use, reuse revokes the session; sign-out, role change and deactivation take effect on the next request |
 | Injection | JPA parameter binding / Criteria API (no string-built SQL); CSV export neutralises formula injection |
 | Invalid input | Bean Validation on every request; domain invariants re-checked |
 | Lost updates | Optimistic locking (`@Version`) → 409 Conflict |
-| Browser attacks | CSP, frame options, referrer policy headers; CORS restricted to the frontend origin; CSRF not applicable to header-based tokens |
+| Browser attacks | Strict CSP without inline scripts, frame options, referrer and permissions policies; CORS restricted; refresh cookie `SameSite=Strict` plus a required custom header (CSRF); uploads typed by content and served sandboxed |
 | Error leakage | Stack traces never returned; uniform RFC 7807 errors |
-| Secrets | JWT secret, DB and SMTP credentials from environment variables |
+| Secrets | JWT secret, data key, DB, SMTP and Google credentials from environment variables; the app refuses to start a real deployment with the development defaults |
+
+The complete treatment, mapped to the OWASP Top 10:2025, is in [SECURITY.md](SECURITY.md).

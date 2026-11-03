@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { format } from 'date-fns'
 import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
@@ -26,6 +27,7 @@ export default function Reports() {
   const workload = useQuery({ queryKey: ['reports', 'workload'], queryFn: () => api.get<TechnicianLoad[]>('/reports/technician-workload') })
   const byService = useQuery({ queryKey: ['reports', 'service'], queryFn: () => api.get<CountRow[]>('/reports/by-service') })
   const byCategory = useQuery({ queryKey: ['reports', 'category'], queryFn: () => api.get<CountRow[]>('/reports/by-category') })
+  const kb = useQuery({ queryKey: ['reports', 'knowledge'], queryFn: () => api.get<{ published: number; views: number; deflections: number; top: { id: number; title: string; deflections: number; views: number; helpful: number }[] }>('/reports/knowledge') })
   const o = overview.data
 
   return (
@@ -136,7 +138,7 @@ export default function Reports() {
                     </td>
                     <td className="py-2.5">
                       <div className="flex items-center gap-2">
-                        <span className="flex gap-0.5" aria-label={`${t.activeIncidents} of ${t.capacity}`}>
+                        <span className="flex gap-0.5" role="img" aria-label={`${t.activeIncidents} of ${t.capacity} slots in use`}>
                           {Array.from({ length: t.capacity }).map((_, k) => (
                             <span key={k} className={cn('h-3 w-2.5 rounded-sm', k < t.activeIncidents ? (t.activeIncidents >= t.capacity ? 'bg-p1' : 'bg-accent') : 'bg-surface-3')} />
                           ))}
@@ -152,6 +154,34 @@ export default function Reports() {
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+      </Panel>
+
+      <Panel title="Self-help" description="Problems people solved from the knowledge base instead of reporting an incident">
+        {!kb.data ? <Skeleton className="h-32" /> : (
+          <div className="grid gap-6 md:grid-cols-[220px_minmax(0,1fr)]">
+            <dl className="grid grid-cols-3 gap-3 md:grid-cols-1">
+              <div><dt className="text-xs text-muted">Incidents avoided</dt><dd className="text-[26px] font-semibold leading-tight tabular text-ok">{kb.data.deflections}</dd></div>
+              <div><dt className="text-xs text-muted">Article views</dt><dd className="text-lg font-semibold tabular">{kb.data.views.toLocaleString()}</dd></div>
+              <div><dt className="text-xs text-muted">Published articles</dt><dd className="text-lg font-semibold tabular">{kb.data.published}</dd></div>
+            </dl>
+            <ol className="space-y-2.5">
+              {kb.data.top.map((a) => {
+                const max = Math.max(1, ...kb.data!.top.map((t) => t.deflections))
+                return (
+                  <li key={a.id}>
+                    <div className="flex items-baseline justify-between gap-3 text-[13px]">
+                      <Link to={`/kb/${a.id}`} className="min-w-0 truncate font-medium hover:text-accent-text">{a.title}</Link>
+                      <span className="shrink-0 tabular text-muted">{a.deflections} solved</span>
+                    </div>
+                    <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-surface-2">
+                      <div className="h-full rounded-full bg-chart-1" style={{ width: `${(a.deflections / max) * 100}%` }} />
+                    </div>
+                  </li>
+                )
+              })}
+            </ol>
           </div>
         )}
       </Panel>

@@ -41,7 +41,7 @@ public class Notification {
     @Column(nullable = false, length = 200)
     private String subject;
 
-    @Column(nullable = false, length = 2000)
+    @Column(nullable = false, length = 4000)
     private String message;
 
     @Column(name = "incident_number", length = 20)
@@ -71,7 +71,7 @@ public class Notification {
         this.channel = channel;
         this.eventType = m.eventType();
         this.subject = truncate(m.subject(), 200);
-        this.message = truncate(m.body(), 2000);
+        this.message = truncate(m.bodyForLog(), 4000);
         this.incidentNumber = m.incidentNumber();
         this.urgent = m.urgent();
         this.deliveryStatus = status;

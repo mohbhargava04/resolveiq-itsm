@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { ChevronLeft, ChevronRight, Download, Inbox, Plus, Search, X } from 'lucide-react'
@@ -8,6 +8,7 @@ import { cn, SLA_LABEL, STATUS_LABEL } from '@/lib/format'
 import type { CategoryView, IncidentStatus, IncidentSummary, Page, Priority, ServiceView, SlaStatus, User } from '@/lib/types'
 import { Button, EmptyState, Input, PageHeader, Panel, Select, Skeleton } from '@/components/ui'
 import { IncidentList, PriorityBadge } from '@/components/incident-bits'
+import { BulkBar } from '@/components/BulkActions'
 
 const STATUSES: IncidentStatus[] = ['NEW', 'CLASSIFIED', 'ASSIGNED', 'ACKNOWLEDGED', 'IN_PROGRESS', 'AWAITING_INFO', 'RESOLVED', 'VERIFIED', 'CLOSED']
 const SLA: SlaStatus[] = ['ON_TRACK', 'AT_RISK', 'PAUSED', 'BREACHED', 'MET']
@@ -61,6 +62,12 @@ export default function Incidents() {
   const services = useQuery({ queryKey: ['services'], queryFn: () => api.get<ServiceView[]>('/services'), staleTime: 300_000 })
   const categories = useQuery({ queryKey: ['categories'], queryFn: () => api.get<CategoryView[]>('/categories'), staleTime: 300_000 })
   const technicians = useQuery({ queryKey: ['technicians'], queryFn: () => api.get<User[]>('/technicians'), enabled: is('TEAM_LEAD'), staleTime: 60_000 })
+
+  const lead = is('TEAM_LEAD')
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const toggle = (n: string) => setSelected((s) => { const next = new Set(s); if (next.has(n)) next.delete(n); else next.add(n); return next })
+  const pageNumbers = (list.data?.items ?? []).map((i) => i.number)
+  const allOnPage = pageNumbers.length > 0 && pageNumbers.every((n) => selected.has(n))
 
   const activeFilters = useMemo(() => [...params.keys()].filter((k) => !['page', 'sort', 'dir'].includes(k)).length, [params])
   const data = list.data
@@ -159,8 +166,18 @@ export default function Incidents() {
         {list.isLoading ? (
           <div className="space-y-2 py-2">{[0, 1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-12" />)}</div>
         ) : (
+          <>
+          {lead && (data?.items.length ?? 0) > 0 && (
+            <label className="flex items-center gap-2 border-b border-line px-1 py-2 text-xs text-muted">
+              <input type="checkbox" className="ml-1 size-4 cursor-pointer accent-[var(--accent)]" checked={allOnPage}
+                onChange={() => setSelected((s) => { const next = new Set(s); pageNumbers.forEach((n) => allOnPage ? next.delete(n) : next.add(n)); return next })} />
+              Select all on this page
+            </label>
+          )}
           <IncidentList
             items={data?.items ?? []}
+            selected={lead ? selected : undefined}
+            onToggle={lead ? toggle : undefined}
             showReporter={staff}
             empty={
               <EmptyState icon={<Inbox className="size-8" />} title={activeFilters ? 'No incidents match these filters' : 'No incidents yet'}
@@ -169,8 +186,11 @@ export default function Incidents() {
               </EmptyState>
             }
           />
+          </>
         )}
       </Panel>
+
+      {lead && selected.size > 0 && <BulkBar selected={[...selected]} onClear={() => setSelected(new Set())} />}
 
       {data && data.totalItems > 0 && (
         <div className="mt-3 flex items-center justify-between text-[13px] text-muted">

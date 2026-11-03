@@ -19,6 +19,8 @@ import com.resolveiq.incident.domain.Actor;
 import com.resolveiq.incident.domain.Classification;
 import com.resolveiq.incident.domain.Impact;
 import com.resolveiq.incident.domain.Incident;
+import com.resolveiq.incident.domain.IncidentStatus;
+import com.resolveiq.incident.domain.MajorStage;
 import com.resolveiq.incident.domain.NoteType;
 import com.resolveiq.incident.domain.Priority;
 import com.resolveiq.incident.domain.Resolution;
@@ -264,7 +266,80 @@ public class IncidentService {
             }
             i.resolve(new Resolution(summary, rootCause, actor), Actor.of(actor), now);
             closeSuspectedDuplicatesOf(i, now);
+            if (i.isMajor()) {
+                resolveLinkedIncidents(i, summary, rootCause, actor, now);
+            }
         });
+    }
+
+    // =========================================================================================
+    // Major incidents
+    // =========================================================================================
+
+    /** Declares a major incident and, optionally, links related incidents to it in the same step. */
+    public Incident declareMajor(String number, String summary, List<String> linkNumbers, User actor) {
+        Incident major = execute(number, actor, (i, now) -> i.declareMajor(summary, Actor.of(actor), now));
+        if (linkNumbers != null) {
+            for (String n : linkNumbers) {
+                if (n != null && !n.isBlank() && !n.trim().equalsIgnoreCase(number)) {
+                    linkToMajor(n.trim(), major.getNumber(), actor);
+                }
+            }
+        }
+        return major;
+    }
+
+    public Incident linkToMajor(String number, String majorNumber, User actor) {
+        return execute(number, actor, (i, now) -> i.linkToMajor(load(majorNumber), Actor.of(actor), now));
+    }
+
+    public Incident postMajorUpdate(String number, MajorStage stage, String message, User actor) {
+        return execute(number, actor, (i, now) -> i.postMajorUpdate(stage, message, actor, now));
+    }
+
+    /**
+     * "I'm affected too": an employee joins an ongoing major incident. A normal incident is created for
+     * them (so they can track it and are notified) and linked to the major incident automatically.
+     */
+    public Incident reportAffected(String majorNumber, String details, User reporter) {
+        Incident major = load(majorNumber);
+        if (!major.isMajor() || !major.isActive()) {
+            throw new BusinessRuleViolationException(majorNumber + " is not an open major incident");
+        }
+        String description = details == null || details.isBlank()
+                ? "I am affected by the ongoing problem: " + major.getTitle() : details.trim();
+        ReportOutcome outcome = report(new ReportIncidentCommand("Affected: " + truncate(major.getTitle(), 140), description,
+                major.getService().getCode(), major.getCategory() == null ? null : major.getCategory().getCode(),
+                Impact.LOW, Urgency.HIGH, 1, true), reporter);
+        Incident created = outcome.incident();
+        created.linkToMajor(major, Actor.SYSTEM, clock.instant());
+        Incident saved = incidents.save(created);
+        publisher.publishAll(saved.pullEvents());
+        return saved;
+    }
+
+    @Transactional(readOnly = true)
+    public List<Incident> activeMajorIncidents() {
+        return incidents.findActiveMajor(IncidentStatus.DONE);
+    }
+
+    private void resolveLinkedIncidents(Incident major, String summary, String rootCause, User actor, Instant now) {
+        for (Incident child : incidents.findLinkedTo(major.getId())) {
+            if (!child.isActive()) {
+                continue;
+            }
+            try {
+                child.resolveWithMajorIncident(major, new Resolution("Resolved with major incident " + major.getNumber()
+                        + ": " + summary, rootCause, actor), Actor.SYSTEM, now);
+                publisher.publishAll(incidents.save(child).pullEvents());
+            } catch (ItsmException ignored) {
+                // e.g. still NEW; leave it for a human
+            }
+        }
+    }
+
+    private static String truncate(String s, int max) {
+        return s.length() <= max ? s : s.substring(0, max - 1) + "…";
     }
 
     public Incident verify(String number, User actor) {

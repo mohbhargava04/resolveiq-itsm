@@ -27,10 +27,22 @@ spring:
       mail.smtp.auth: true
       mail.smtp.starttls.enable: true
 
+  servlet:
+    multipart:
+      max-file-size: 5MB          # attachments; also enforced (with type checks) by AttachmentService
+      max-request-size: 6MB
+
 server:
   port: ${PORT:8080}
+  # behind a cloud load balancer (Render, Railway...) set ITSM_FORWARD_HEADERS=framework so the real
+  # client address (rate limiting, sign-in log) and https (Secure cookies) are seen
+  forward-headers-strategy: ${ITSM_FORWARD_HEADERS:none}
   error:
     include-stacktrace: never
+  servlet:
+    session:
+      cookie:
+        http-only: true
 
 management:
   health:
@@ -45,22 +57,45 @@ management:
       show-details: when-authorized
 
 springdoc:
+  api-docs:
+    enabled: ${ITSM_API_DOCS:true}
+    path: /v3/api-docs
   swagger-ui:
     path: /swagger-ui.html
     operations-sorter: method
-  api-docs:
-    path: /v3/api-docs
 
 itsm:
   display-zone: ${ITSM_DISPLAY_ZONE:Asia/Kolkata}
+  # where people reach the app; used in e-mailed links and the Google sign-in redirect address
+  public-url: ${ITSM_PUBLIC_URL:http://localhost:8080}
+  # shows one-click demo accounts on the sign-in page; set ITSM_DEMO_MODE=false for a real deployment
+  demo-mode: ${ITSM_DEMO_MODE:true}
   security:
     # HMAC-SHA256 signing key for JWTs. Override with ITSM_JWT_SECRET in every real deployment.
     jwt-secret: ${ITSM_JWT_SECRET:resolveiq-dev-only-secret-change-me-0123456789abcdef}
-    token-validity-minutes: ${ITSM_TOKEN_VALIDITY_MINUTES:480}
+    # AES key for secrets stored in the database (two-factor secrets). Override with ITSM_DATA_KEY.
+    data-key: ${ITSM_DATA_KEY:resolveiq-dev-only-data-key-change-me-0123456789}
+    token-validity-minutes: ${ITSM_TOKEN_VALIDITY_MINUTES:15}   # access token
+    refresh-token-days: 7                                          # signed out after a week of inactivity
+    session-max-days: 30                                           # and after 30 days regardless
+    refresh-reuse-grace-seconds: 20
     max-failed-logins: 5
     lockout-minutes: 15
     bcrypt-strength: 12
     allowed-origins: ${ITSM_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:3000}
+    expose-dev-tools: ${ITSM_EXPOSE_DEV_TOOLS:false}             # Swagger UI / H2 console without sign-in
+    rate-limit:
+      enabled: ${ITSM_RATE_LIMIT:true}
+  oauth:
+    google:
+      # create at https://console.cloud.google.com/apis/credentials (OAuth client ID, type "Web application")
+      # authorised redirect URI: <public-url>/api/auth/oauth/google/callback
+      client-id: ${ITSM_GOOGLE_CLIENT_ID:}
+      client-secret: ${ITSM_GOOGLE_CLIENT_SECRET:}
+  inbound-email:
+    # shared secret the mail provider sends in the X-Inbound-Secret header; empty = endpoint disabled
+    secret: ${ITSM_INBOUND_EMAIL_SECRET:}
+    address: ${ITSM_INBOUND_EMAIL_ADDRESS:support@resolveiq.test}
   sla:
     monitor-enabled: true
     monitor-interval-ms: ${ITSM_SLA_MONITOR_INTERVAL_MS:30000}
@@ -93,12 +128,17 @@ spring:
       enabled: true
       path: /h2-console
 
+itsm:
+  security:
+    expose-dev-tools: ${ITSM_EXPOSE_DEV_TOOLS:true}   # local development only
+
 ---
 spring:
   config:
     activate:
       on-profile: postgres
   datasource:
-    url: ${ITSM_DB_URL:jdbc:postgresql://localhost:5432/resolveiq}
+    # either a full JDBC URL, or the parts (cloud hosts such as Render hand these out separately)
+    url: ${ITSM_DB_URL:jdbc:postgresql://${ITSM_DB_HOST:localhost}:${ITSM_DB_PORT:5432}/${ITSM_DB_NAME:resolveiq}}
     username: ${ITSM_DB_USERNAME:resolveiq}
     password: ${ITSM_DB_PASSWORD:resolveiq}

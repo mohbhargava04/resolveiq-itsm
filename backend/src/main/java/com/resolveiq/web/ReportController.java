@@ -24,8 +24,26 @@ public class ReportController {
 
     private final ReportService reports;
 
-    public ReportController(ReportService reports) {
+    private final com.resolveiq.knowledge.KnowledgeArticleRepository articles;
+
+    public ReportController(ReportService reports, com.resolveiq.knowledge.KnowledgeArticleRepository articles) {
         this.reports = reports;
+        this.articles = articles;
+    }
+
+    @GetMapping("/knowledge")
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    @io.swagger.v3.oas.annotations.Operation(summary = "Self-help: article views and incidents avoided (deflections)")
+    public java.util.Map<String, Object> knowledge() {
+        var published = articles.findByStatusOrderByUpdatedAtDesc(com.resolveiq.knowledge.ArticleStatus.PUBLISHED);
+        var top = published.stream()
+                .sorted(java.util.Comparator.comparingInt(com.resolveiq.knowledge.KnowledgeArticle::getDeflections).reversed())
+                .limit(5)
+                .map(a -> java.util.Map.<String, Object>of("id", a.getId(), "title", a.getTitle(),
+                        "deflections", a.getDeflections(), "views", a.getViews(), "helpful", a.getHelpfulVotes()))
+                .toList();
+        return java.util.Map.of("published", published.size(), "views", articles.totalViews(),
+                "deflections", articles.totalDeflections(), "top", top);
     }
 
     @GetMapping("/overview")

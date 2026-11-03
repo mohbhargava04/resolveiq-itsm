@@ -9,7 +9,7 @@ import { Avatar } from './ui'
 // ---------------------------------------------------------------------------------------------
 
 const P_STYLE: Record<Priority, string> = {
-  P1: 'bg-p1 text-white',
+  P1: 'bg-p1 text-p1-ink',
   P2: 'bg-p2-soft text-p2 ring-1 ring-inset ring-p2/30',
   P3: 'bg-p3-soft text-p3',
   P4: 'bg-p4-soft text-p4',
@@ -23,7 +23,7 @@ export function PriorityBadge({ priority, showLabel = false, className }: { prio
       className={cn('inline-flex h-[22px] items-center gap-1 rounded-md px-1.5 text-xs font-semibold tabular', P_STYLE[priority], className)}
     >
       {priority}
-      {showLabel && <span className="font-medium opacity-90">{PRIORITY_LABEL[priority]}</span>}
+      {showLabel && <span className="font-medium">{PRIORITY_LABEL[priority]}</span>}
     </span>
   )
 }
@@ -125,7 +125,7 @@ export function RiskTag({ risk }: { risk?: SlaRisk }) {
   const map = {
     MEDIUM: 'text-p2 bg-p2-soft',
     HIGH: 'text-p1 bg-p1-soft',
-    BREACHED: 'text-white bg-p1',
+    BREACHED: 'text-p1-ink bg-p1',
     PAUSED: 'text-muted bg-surface-2',
   } as const
   const text = { MEDIUM: 'Some risk', HIGH: 'High risk', BREACHED: 'Breached', PAUSED: 'Paused' } as const
@@ -152,18 +152,24 @@ export function EscalationTag({ level }: { level: EscalationLevel }) {
 // Incident list — a divided list rather than a card grid; dense but calm.
 // ---------------------------------------------------------------------------------------------
 
-export function IncidentList({ items, showReporter = false, showAssignee = true, empty, riskByNumber }: {
+export function IncidentList({ items, showReporter = false, showAssignee = true, empty, riskByNumber, selected, onToggle }: {
   items: IncidentSummary[]; showReporter?: boolean; showAssignee?: boolean; empty?: React.ReactNode
   riskByNumber?: Record<string, SlaRisk>
+  /** When given, each row gets a checkbox (bulk actions). */
+  selected?: Set<string>; onToggle?: (number: string) => void
 }) {
   if (!items.length) return <>{empty}</>
   return (
     <ul className="divide-y divide-line">
       {items.map((i) => (
-        <li key={i.number}>
+        <li key={i.number} className={cn(onToggle && 'flex items-center gap-2', selected?.has(i.number) && 'bg-accent-soft/40')}>
+          {onToggle && (
+            <input type="checkbox" aria-label={`Select ${i.number}`} checked={selected?.has(i.number) ?? false}
+              onChange={() => onToggle(i.number)} className="ml-1 size-4 shrink-0 cursor-pointer accent-[var(--accent)]" />
+          )}
           <Link
             to={`/incidents/${i.number}`}
-            className="group grid grid-cols-[auto_1fr_auto] items-center gap-x-4 gap-y-1 px-1 py-3 transition-colors hover:bg-surface-2/60 sm:grid-cols-[auto_minmax(0,1fr)_150px_140px] rounded-md"
+            className="group grid min-w-0 flex-1 grid-cols-[auto_1fr_auto] items-center gap-x-4 gap-y-1 px-1 py-3 transition-colors hover:bg-surface-2/60 sm:grid-cols-[auto_minmax(0,1fr)_150px_140px] rounded-md"
           >
             <PriorityBadge priority={i.priority} className="w-8 justify-center" />
             <div className="min-w-0">
@@ -176,6 +182,8 @@ export function IncidentList({ items, showReporter = false, showAssignee = true,
                   <span title="Categorised by AI" className="text-faint"><Sparkles className="size-3.5" /></span>
                 )}
                 {riskByNumber?.[i.number] && <RiskTag risk={riskByNumber[i.number]} />}
+                {i.major && <span className="shrink-0 rounded bg-p1 px-1.5 py-px text-[10.5px] font-semibold text-p1-ink">Major</span>}
+                {i.majorParent && <span title={`Part of major incident ${i.majorParent}`} className="shrink-0 rounded bg-p1-soft px-1.5 py-px text-[10.5px] font-medium text-p1">{i.majorParent}</span>}
               </div>
               <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted">
                 <span className="tabular font-medium text-ink-2">{i.number}</span>

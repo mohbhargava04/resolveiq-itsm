@@ -5,7 +5,15 @@ spring:
     password:
 
 itsm:
+  demo-mode: true
   security:
     bcrypt-strength: 4      # fast hashing in tests only
+    expose-dev-tools: true
+    rate-limit:
+      # the test suite signs in hundreds of times from MockMvc's loopback address; the limiter itself
+      # is tested from other addresses
+      exempt-addresses: 127.0.0.1
   sla:
     monitor-enabled: false  # tests drive the monitor directly with a controllable clock
+  inbound-email:
+    secret: test-inbound-secret

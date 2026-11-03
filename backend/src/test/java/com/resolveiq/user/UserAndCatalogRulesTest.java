@@ -28,13 +28,13 @@ class UserAndCatalogRulesTest {
     @Test
     @DisplayName("TC-29 Factory creates the right subclass for each role and hashes the password")
     void factory() {
-        User tl = factory.create(new UserFactory.NewUser(Role.TEAM_LEAD, "Neha", "neha@x.io", "Secret123", null, "IT",
+        User tl = factory.create(new UserFactory.NewUser(Role.TEAM_LEAD, "Neha", "neha@x.io", "Tulip-River-42", null, "IT",
                 Set.of("network"), ExperienceLevel.EXPERT, 3));
         assertThat(tl).isInstanceOf(TeamLead.class).isInstanceOf(Technician.class);
         assertThat(tl.getRole()).isEqualTo(Role.TEAM_LEAD);
         assertThat(((Technician) tl).getSkills()).containsExactly("NETWORK");
-        assertThat(tl.getPasswordHash()).isNotEqualTo("Secret123").startsWith("$2a$");
-        assertThat(factory.create(UserFactory.NewUser.of(Role.EMPLOYEE, "Ava", "ava@x.io", "Secret123", "CS")))
+        assertThat(tl.getPasswordHash()).isNotEqualTo("Tulip-River-42").startsWith("$2a$");
+        assertThat(factory.create(UserFactory.NewUser.of(Role.EMPLOYEE, "Ava", "ava@x.io", "Tulip-River-42", "CS")))
                 .isInstanceOf(Employee.class);
     }
 
@@ -43,7 +43,7 @@ class UserAndCatalogRulesTest {
     void validation() {
         assertThatThrownBy(() -> PasswordPolicy.validate("short1")).isInstanceOf(BusinessRuleViolationException.class);
         assertThatThrownBy(() -> PasswordPolicy.validate("allletters")).isInstanceOf(BusinessRuleViolationException.class);
-        assertThatThrownBy(() -> factory.create(new UserFactory.NewUser(Role.TECHNICIAN, "T", "t@x.io", "Secret123",
+        assertThatThrownBy(() -> factory.create(new UserFactory.NewUser(Role.TECHNICIAN, "T", "t@x.io", "Tulip-River-42",
                 null, null, Set.of(), null, null))).isInstanceOf(BusinessRuleViolationException.class);
     }
 

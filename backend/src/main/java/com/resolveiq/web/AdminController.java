@@ -53,10 +53,23 @@ public class AdminController {
     private final NotificationChannelFactory channels;
     private final SlaMonitorService slaMonitor;
     private final CurrentUserService currentUser;
+    private final com.resolveiq.security.session.SessionService sessions;
+    private final com.resolveiq.user.UserRepository users;
+    private final com.resolveiq.security.oauth.IdentityProviders identityProviders;
+    private final com.resolveiq.security.EmailDomainPolicy domains;
+    private final java.time.Clock clock;
 
     public AdminController(SettingsService settings, PriorityEngine priorityEngine, AssignmentService assignment,
                            AuditService audit, NotificationRepository notifications, NotificationChannelFactory channels,
-                           SlaMonitorService slaMonitor, CurrentUserService currentUser) {
+                           SlaMonitorService slaMonitor, CurrentUserService currentUser,
+                           com.resolveiq.security.session.SessionService sessions, com.resolveiq.user.UserRepository users,
+                           com.resolveiq.security.oauth.IdentityProviders identityProviders,
+                           com.resolveiq.security.EmailDomainPolicy domains, java.time.Clock clock) {
+        this.sessions = sessions;
+        this.users = users;
+        this.identityProviders = identityProviders;
+        this.domains = domains;
+        this.clock = clock;
         this.settings = settings;
         this.priorityEngine = priorityEngine;
         this.assignment = assignment;
@@ -101,13 +114,15 @@ public class AdminController {
     public PageResponse<AuditEntry> auditLog(@RequestParam(required = false) String incident,
                                              @RequestParam(required = false) String actor,
                                              @RequestParam(required = false) AuditAction action,
+                                             @RequestParam(required = false) Boolean security,
                                              @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
                                              @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to,
                                              @RequestParam(defaultValue = "0") int page,
                                              @RequestParam(defaultValue = "50") int size) {
         var pageable = PageRequest.of(Math.max(0, page), Math.min(Math.max(1, size), 200),
                 Sort.by(Sort.Direction.DESC, "occurredAt", "id"));
-        return PageResponse.of(audit.search(incident, actor, action, from, to, pageable), IncidentMapper::toAudit);
+        return PageResponse.of(audit.search(incident, actor, action, Boolean.TRUE.equals(security) ? AuditAction.SECURITY : null,
+                from, to, pageable), IncidentMapper::toAudit);
     }
 
     @GetMapping("/api/admin/notifications/outbox")
@@ -124,6 +139,7 @@ public class AdminController {
             m.put("recipient", n.getRecipient().getFullName());
             m.put("address", n.getChannel() == ChannelType.SMS ? n.getRecipient().getPhone() : n.getRecipient().getEmail());
             m.put("subject", n.getSubject());
+            m.put("message", n.getMessage());
             m.put("status", n.getDeliveryStatus());
             m.put("incidentNumber", n.getIncidentNumber());
             m.put("urgent", n.isUrgent());
@@ -133,6 +149,28 @@ public class AdminController {
         }).toList();
     }
 
+    @GetMapping("/api/admin/security")
+    @Operation(summary = "Security overview: sessions, lockouts, 2FA adoption and recent security events")
+    public Map<String, Object> securityOverview() {
+        Instant now = clock.instant();
+        Instant day = now.minus(java.time.Duration.ofDays(1));
+        Instant month = now.minus(java.time.Duration.ofDays(30));
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("activeSessions", sessions.activeSessionCount());
+        m.put("lockedAccounts", users.countLocked(now));
+        m.put("privilegedAccounts", users.countPrivileged());
+        m.put("privilegedWithMfa", users.countPrivilegedWithMfa());
+        m.put("failedLogins24h", audit.count(AuditAction.LOGIN_FAILED, day) + audit.count(AuditAction.MFA_FAILED, day));
+        m.put("lockouts24h", audit.count(AuditAction.ACCOUNT_LOCKED, day));
+        m.put("ssoRejected30d", audit.count(AuditAction.SSO_LOGIN_REJECTED, month));
+        m.put("tokenReuse30d", audit.count(AuditAction.SESSION_REUSE_DETECTED, month));
+        m.put("passwordResets30d", audit.count(AuditAction.PASSWORD_RESET, month));
+        m.put("googleSignInEnabled", !identityProviders.enabledProviders().isEmpty());
+        m.put("allowedDomains", domains.allowedDomains());
+        m.put("mfaRequiredForPrivileged", settings.isEnabled(SettingKey.REQUIRE_MFA_FOR_PRIVILEGED));
+        return m;
+    }
+
     @PostMapping("/api/admin/sla-monitor/run")
     @Operation(summary = "Run the SLA monitor now (it also runs automatically every 30 s)")
     public SlaMonitorService.ScanResult runSlaMonitor() {
@@ -140,19 +178,24 @@ public class AdminController {
     }
 
     private String validate(SettingKey key, String value) {
+        if (key == SettingKey.ALLOWED_EMAIL_DOMAINS) {
+            return com.resolveiq.security.EmailDomainPolicy.normaliseList(value == null ? "" : value);
+        }
         if (value == null || value.isBlank()) {
             throw new BusinessRuleViolationException(key + " needs a value");
         }
         return switch (key) {
             case PRIORITY_STRATEGY -> priorityEngine.require(value.trim().toUpperCase()).key();
             case ASSIGNMENT_STRATEGY -> assignment.require(value.trim()).key();
-            case AUTO_ASSIGNMENT, AUTO_ESCALATION, AUTO_CLOSE_VERIFIED -> {
+            case AUTO_ASSIGNMENT, AUTO_ESCALATION, AUTO_CLOSE_VERIFIED, SELF_REGISTRATION, AUTO_PROVISION_SSO,
+                 REQUIRE_MFA_FOR_PRIVILEGED -> {
                 String v = value.trim().toLowerCase();
                 if (!v.equals("true") && !v.equals("false")) {
                     throw new BusinessRuleViolationException(key + " must be true or false");
                 }
                 yield v;
             }
+            case ALLOWED_EMAIL_DOMAINS -> throw new IllegalStateException("handled above");
         };
     }
 

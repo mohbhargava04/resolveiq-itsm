@@ -15,7 +15,7 @@ const VARIANTS: Record<Variant, string> = {
   secondary: 'bg-surface text-ink border border-line-strong hover:bg-surface-2',
   ghost: 'text-ink-2 hover:bg-surface-2 hover:text-ink',
   subtle: 'bg-surface-2 text-ink hover:bg-surface-3',
-  danger: 'bg-p1 text-white hover:opacity-90',
+  danger: 'bg-p1 text-p1-ink hover:opacity-90',
 }
 
 const SIZES: Record<Size, string> = {
@@ -67,23 +67,26 @@ export function IconButton({ label, className, children, ...rest }: ButtonHTMLAt
 // Form controls
 // ---------------------------------------------------------------------------------------------
 
+/** Full width unless the caller sets a width (w-auto, w-40…); avoids two conflicting width classes. */
+const width = (className?: string) => (className && /(^|\s)w-/.test(className) ? '' : 'w-full')
+
 const fieldBase =
-  'w-full rounded-lg border border-line-strong bg-surface px-3 text-sm text-ink placeholder:text-faint ' +
+  'rounded-lg border border-line-strong bg-surface px-3 text-sm text-ink placeholder:text-faint ' +
   'transition-colors focus:outline-none focus:border-accent focus:ring-3 focus:ring-accent/15 disabled:opacity-60'
 
 export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(function Input({ className, ...rest }, ref) {
-  return <input ref={ref} className={cn(fieldBase, 'h-9', className)} {...rest} />
+  return <input ref={ref} className={cn(fieldBase, width(className), 'h-9', className)} {...rest} />
 })
 
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaHTMLAttributes<HTMLTextAreaElement>>(function Textarea({ className, ...rest }, ref) {
-  return <textarea ref={ref} className={cn(fieldBase, 'py-2 leading-relaxed resize-y min-h-20', className)} {...rest} />
+  return <textarea ref={ref} className={cn(fieldBase, width(className), 'py-2 leading-relaxed resize-y min-h-20', className)} {...rest} />
 })
 
 export const Select = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSelectElement>>(function Select({ className, children, ...rest }, ref) {
   return (
     <select
       ref={ref}
-      className={cn(fieldBase, 'h-9 appearance-none pr-8 bg-[length:16px] bg-[right_0.6rem_center] bg-no-repeat cursor-pointer', className)}
+      className={cn(fieldBase, width(className), 'h-9 appearance-none pr-8 bg-[length:16px] bg-[right_0.6rem_center] bg-no-repeat cursor-pointer', className)}
       style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238a919c' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")" }}
       {...rest}
     >
@@ -153,9 +156,15 @@ export function Switch({ checked, onChange, label, disabled }: { checked: boolea
 // Display
 // ---------------------------------------------------------------------------------------------
 
-export function Avatar({ name, size = 28, className }: { name?: string; size?: number; className?: string }) {
+export function Avatar({ name, size = 28, className, src }: { name?: string; size?: number; className?: string; src?: string }) {
   // Deterministic, muted hue per person so avatars are distinguishable but never loud.
   const hue = [...(name ?? '?')].reduce((a, c) => a + c.charCodeAt(0), 0) % 360
+  if (src) {
+    return (
+      <img src={src} alt="" width={size} height={size} referrerPolicy="no-referrer"
+        className={cn('inline-block shrink-0 rounded-full object-cover', className)} style={{ width: size, height: size }} />
+    )
+  }
   return (
     <span
       aria-hidden
@@ -201,13 +210,76 @@ export function Panel({ title, action, children, className, bodyClassName, descr
   )
 }
 
-export function EmptyState({ icon, title, children, action }: { icon?: ReactNode; title: string; children?: ReactNode; action?: ReactNode }) {
+export function EmptyState({ icon, title, children, action, heading }: {
+  icon?: ReactNode; title: string; children?: ReactNode; action?: ReactNode
+  /** Use 'h1' when the empty state is the whole page (e.g. "not found"), so the page still has a title. */
+  heading?: 'h1' | 'h2'
+}) {
+  const Title = heading ?? 'p'
   return (
     <div className="flex flex-col items-center justify-center px-6 py-12 text-center">
       {icon && <div className="mb-3 text-faint">{icon}</div>}
-      <p className="font-medium text-ink">{title}</p>
+      <Title className="font-medium text-ink">{title}</Title>
       {children && <p className="mt-1 max-w-sm text-[13px] text-muted">{children}</p>}
       {action && <div className="mt-4">{action}</div>}
+    </div>
+  )
+}
+
+/** Small labelled chips editor (e.g. technician skills). */
+export function ChipsInput({ value, onChange, placeholder, id }: { value: string[]; onChange: (v: string[]) => void; placeholder?: string; id?: string }) {
+  const add = (raw: string) => {
+    const parts = raw.split(/[,;]+/).map((p) => p.trim().toUpperCase()).filter(Boolean)
+    if (parts.length) onChange([...new Set([...value, ...parts])])
+  }
+  return (
+    <div className={cn(fieldBase, 'w-full flex min-h-9 flex-wrap items-center gap-1.5 py-1.5')}>
+      {value.map((v) => (
+        <span key={v} className="inline-flex items-center gap-1 rounded-md bg-surface-2 px-2 py-0.5 text-xs font-medium">
+          {v}
+          <button type="button" aria-label={`Remove ${v}`} onClick={() => onChange(value.filter((x) => x !== v))} className="text-faint hover:text-ink cursor-pointer">
+            <X className="size-3" />
+          </button>
+        </span>
+      ))}
+      <input
+        id={id}
+        placeholder={value.length ? '' : placeholder}
+        className="min-w-24 flex-1 bg-transparent text-sm outline-none placeholder:text-faint"
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ',') {
+            e.preventDefault()
+            add((e.target as HTMLInputElement).value)
+            ;(e.target as HTMLInputElement).value = ''
+          } else if (e.key === 'Backspace' && !(e.target as HTMLInputElement).value && value.length) {
+            onChange(value.slice(0, -1))
+          }
+        }}
+        onBlur={(e) => { add(e.target.value); e.target.value = '' }}
+      />
+    </div>
+  )
+}
+
+/** Tabs as a row of links/buttons with an underline on the active one. */
+export function Tabs<T extends string>({ value, onChange, tabs, label }: {
+  value: T; onChange: (v: T) => void; tabs: { value: T; label: ReactNode }[]; label: string
+}) {
+  return (
+    <div role="tablist" aria-label={label} className="flex gap-1 border-b border-line">
+      {tabs.map((t) => (
+        <button
+          key={t.value}
+          role="tab"
+          type="button"
+          aria-selected={value === t.value}
+          onClick={() => onChange(t.value)}
+          className={cn('-mb-px border-b-2 px-3 pb-2.5 pt-1 text-[13.5px] font-medium transition-colors cursor-pointer',
+            value === t.value ? 'border-accent text-ink' : 'border-transparent text-muted hover:text-ink')}
+        >
+          {t.label}
+        </button>
+      ))}
     </div>
   )
 }

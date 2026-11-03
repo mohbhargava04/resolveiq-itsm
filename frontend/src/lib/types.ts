@@ -11,7 +11,7 @@ export type EscalationLevel = 'NONE' | 'TEAM_LEAD' | 'ADMINISTRATOR' | 'IT_MANAG
 export type IncidentAction =
   | 'EDIT' | 'ASSIGN' | 'ACKNOWLEDGE' | 'START_WORK' | 'REQUEST_INFO' | 'PROVIDE_INFO' | 'RESOLVE'
   | 'VERIFY' | 'REOPEN' | 'CLOSE' | 'ADD_NOTE' | 'ADD_INTERNAL_NOTE' | 'REPRIORITISE' | 'ESCALATE'
-  | 'MARK_DUPLICATE' | 'FEEDBACK'
+  | 'MARK_DUPLICATE' | 'FEEDBACK' | 'DECLARE_MAJOR' | 'LINK_TO_MAJOR' | 'POST_MAJOR_UPDATE' | 'PUBLISH_ARTICLE'
 
 export interface Ref { code: string; name: string }
 export interface PersonRef { id: number; name: string; role: Role }
@@ -35,12 +35,47 @@ export interface User {
   initials: string
   phone?: string
   department?: string
+  location?: string
+  avatarUrl?: string
   active: boolean
   lastLoginAt?: string
+  profileCompleted: boolean
+  passwordEnabled: boolean
+  googleLinked: boolean
+  mfaEnabled: boolean
+  lockedUntil?: string
   technician?: TechnicianInfo
 }
 
-export interface AuthResponse { token: string; expiresAt: string; user: User }
+export interface AuthResponse {
+  token: string
+  expiresAt: string
+  user: User
+  mfaRequired?: boolean
+  challenge?: string
+  mfaSetupRequired?: boolean
+}
+
+export interface DemoAccount { role: Role; label: string; email: string; lands: string }
+export interface AuthOptions {
+  providers: { id: string; name: string }[]
+  selfRegistration: boolean
+  allowedDomains: string[]
+  demoMode: boolean
+  demoPassword?: string
+  demoAccounts?: DemoAccount[]
+}
+
+export interface SessionView {
+  id: string; device: string; ipAddress?: string; method: string; signedInAt: string
+  lastActiveAt: string; expiresAt: string; current: boolean
+}
+
+export interface SecurityOverview {
+  activeSessions: number; lockedAccounts: number; privilegedAccounts: number; privilegedWithMfa: number
+  failedLogins24h: number; lockouts24h: number; ssoRejected30d: number; tokenReuse30d: number
+  passwordResets30d: number; googleSignInEnabled: boolean; allowedDomains: string[]; mfaRequiredForPrivileged: boolean
+}
 
 export interface IncidentSummary {
   number: string
@@ -61,6 +96,8 @@ export interface IncidentSummary {
   escalationLevel: EscalationLevel
   suspectedDuplicateOf?: string
   autoClassified: boolean
+  major: boolean
+  majorParent?: string
 }
 
 export interface SlaView {
@@ -126,7 +163,40 @@ export interface IncidentDetail {
   notes: NoteView[]
   availableActions: IncidentAction[]
   nextStatuses: IncidentStatus[]
+  major?: MajorView
+  majorParent?: { number: string; title: string; stage?: MajorStage; stageLabel?: string; latestUpdate?: MajorUpdate }
+  knowledgeArticleId?: number
+  attachmentCount: number
 }
+
+export type MajorStage = 'INVESTIGATING' | 'IDENTIFIED' | 'MONITORING' | 'RESOLVED'
+export interface MajorUpdate { stage: MajorStage; stageLabel: string; message: string; author: string; at: string }
+export interface MajorView {
+  stage: MajorStage; stageLabel: string; declaredAt: string; updates: MajorUpdate[]
+  linked: { number: string; title: string; status: IncidentStatus; reporter: PersonRef }[]
+}
+export interface MajorBanner {
+  number: string; title: string; service: Ref; priority?: Priority; stage: MajorStage; stageLabel: string
+  declaredAt: string; latestUpdate?: MajorUpdate; linkedCount: number; affectsMe: boolean
+}
+
+export interface AttachmentView {
+  id: number; fileName: string; contentType: string; sizeBytes: number; image: boolean
+  uploadedBy: string; uploadedAt: string; canDelete: boolean
+}
+
+export interface ArticleSummary {
+  id: number; title: string; excerpt: string; status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED'; audience: 'EVERYONE' | 'IT_STAFF'
+  category?: Ref; service?: Ref; views: number; helpfulVotes: number; deflections: number; relevance?: number; updatedAt: string
+}
+export interface ArticleView {
+  id: number; title: string; symptoms: string; solution: string; status: ArticleSummary['status']; audience: ArticleSummary['audience']
+  category?: Ref; service?: Ref; tags: string[]; sourceIncident?: string; author: string; views: number
+  helpfulVotes: number; unhelpfulVotes: number; deflections: number; myVote?: boolean; publishedAt?: string
+  updatedAt: string; related: ArticleSummary[]
+}
+
+export interface BulkResult { number: string; ok: boolean; message: string }
 
 export interface SimilarIncident {
   number: string
@@ -200,6 +270,8 @@ export interface Recommendation {
 }
 
 export interface CorrelationCluster {
+  majorNumber?: string
+  suggestedMajor?: string
   rootServiceCode: string
   rootServiceName: string
   rootHasDirectReports: boolean
@@ -258,6 +330,8 @@ export interface Dashboard {
   unassigned?: IncidentSummary[]
   atRisk?: QueueItem[]
   correlations?: CorrelationCluster[]
+  majorIncidents?: MajorBanner[]
+  knowledge?: { deflections: number; views: number }
   byPriority?: CountRow[]
   recentActivity?: AuditEntry[]
 }
@@ -285,6 +359,10 @@ export interface Settings {
   AUTO_ASSIGNMENT: string
   AUTO_ESCALATION: string
   AUTO_CLOSE_VERIFIED: string
+  ALLOWED_EMAIL_DOMAINS: string
+  SELF_REGISTRATION: string
+  AUTO_PROVISION_SSO: string
+  REQUIRE_MFA_FOR_PRIVILEGED: string
   priorityStrategies: StrategyView[]
   assignmentStrategies: StrategyView[]
   notificationChannels: string[]
@@ -293,4 +371,10 @@ export interface Settings {
 export interface OutboxRow {
   id: number; channel: 'IN_APP' | 'EMAIL' | 'SMS'; recipient: string; address?: string; subject: string
   status: 'SENT' | 'SIMULATED' | 'FAILED'; incidentNumber?: string; urgent: boolean; createdAt: string; error?: string
+  message?: string
+}
+
+export interface InboundEmail {
+  id: number; receivedAt: string; from: string; subject: string; excerpt?: string; outcome: string
+  incidentNumber?: string; detail?: string
 }

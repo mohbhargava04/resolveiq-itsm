@@ -29,7 +29,10 @@ public sealed interface IncidentEvent permits
         LinkedAsDuplicate,
         FeedbackSubmitted,
         AssignmentFailed,
-        IncidentUpdated {
+        IncidentUpdated,
+        MajorIncidentDeclared,
+        LinkedToMajorIncident,
+        MajorIncidentUpdated {
 
     Incident incident();
 

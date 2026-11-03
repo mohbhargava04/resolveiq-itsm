@@ -4,21 +4,27 @@
 
 | Level | What | Tools | Count |
 |---|---|---|---|
-| Unit | Domain rules, state machine, SLA clock, priority/assignment strategies, escalation chain, NLP, Naive Bayes, correlation, factories | JUnit 5, AssertJ, Mockito; plain `new` objects, no Spring | 61 |
-| Integration | The real application over HTTP (MockMvc): security, the three demo workflows, search, validation, admin configuration, reports | Spring Boot Test, H2 in-memory, controllable clock | 19 |
-| **Total** | | | **80** |
+| Backend unit | Domain rules, state machine, SLA clock, priority/assignment strategies, escalation chain, NLP, Naive Bayes, correlation, factories; security building blocks (TOTP, AES-GCM, token bucket, password policy, file-type detection, reply parsing, startup safety check) | JUnit 5, AssertJ, Mockito; plain `new` objects, no Spring | 69 |
+| Backend integration | The real application over HTTP (MockMvc): sessions and tokens, 2FA, password reset, Google sign-in (fake identity provider), rate limits and headers, the three demo workflows, attachments, knowledge base, major incidents, bulk actions, inbound e-mail, user administration, search, reports | Spring Boot Test, H2 in-memory, controllable clock | 60 |
+| Frontend unit & component | API client session handling (silent refresh, single-flight, CSRF header), formatting, UI building blocks, the sign-in page (demo accounts, errors, 2FA step) | Vitest, Testing Library, jsdom; `fetch` replaced by a fake server per test | 16 |
+| Accessibility | 23 screens × light and dark themes, every role | axe-core (WCAG 2.1 A/AA + best practices) driven by Playwright | 0 violations |
+| **Total automated** | | | **145** (+ accessibility scan) |
 
 - Time-dependent rules use an injected `Clock`; tests replace it with a `MutableClock` and jump forward
   (e.g. 6 minutes past a P1 response deadline) instead of waiting.
 - Integration tests run against the seeded demo organisation; each test runs in a rolled-back transaction.
 - The same suite also passes against **PostgreSQL 16** (`./mvnw test -Dspring.datasource.url=jdbc:postgresql://…`).
-- Coverage (JaCoCo): **78 % of lines**; core packages 84–97 %. Report: `backend/target/site/jacoco/index.html`.
-- GitHub Actions runs the full suite on every push.
+- Coverage (JaCoCo): **82 % of lines**; core packages 84–97 %. Report: `backend/target/site/jacoco/index.html`
+  (after `./mvnw verify`). The lowest package is the real Google adapter, whose HTTP calls to Google are
+  replaced in tests by a fake implementation of the same `IdentityProvider` interface.
+- GitHub Actions runs both suites on every push; CodeQL scans Java and TypeScript for security bugs.
 
 ```sh
 cd backend
-./mvnw test                                  # all tests
+./mvnw test                                  # all backend tests
 ./mvnw test -Dtest=IncidentLifecycleTest     # one class
+cd ../frontend
+npm test                                     # all frontend tests (npm run test:watch while coding)
 ```
 
 ## Documented test cases
@@ -80,3 +86,55 @@ Category key — **N** normal operation · **B** boundary · **I** invalid input
 Additional tests (not numbered) cover the ITIL matrix, user multiplier boundaries (7 cases), round-robin,
 experience-based ranking, seniority fit, synonym normalisation, service affinity, medians, manual escalation,
 event recording, available actions per role, row-level security and technician availability.
+
+## Week 3 test cases: security, collaboration and administration
+
+| ID | Cat. | Scenario | Expected result | Test |
+|---|---|---|---|---|
+| SEC-01 | N | Sign in | Refresh cookie HttpOnly, SameSite=Strict, path `/api/auth`; access token valid 15 min | `SessionSecurityIntegrationTest` |
+| SEC-02 | E | Stolen refresh token replayed | Rotation on each refresh; replay after the grace window revokes the whole session | 〃 |
+| SEC-03 | A | Cross-site refresh (CSRF) | Refresh/sign-out without `X-Requested-With` refused | 〃 |
+| SEC-04 | N | Sign out | Access token stops working immediately | 〃 |
+| SEC-05 | R | Account deactivated | Existing tokens rejected on the next request | 〃 |
+| SEC-06 | R | Role changed | New role applies at once; role inside an old token ignored | 〃 |
+| SEC-07 | I | Wrong token type / forged token | 2FA challenge or forged JWT cannot call the API | 〃 |
+| SEC-08 | N | Sessions list | Own devices listed; others can be signed out | 〃 |
+| SEC-09 | R | Password changed | Other devices signed out; fresh session returned | 〃 |
+| SEC-10 | N/E | Two-step verification | Setup needs a valid code; sign-in asks for a code; wrong and replayed codes refused | `MfaAndPasswordResetIntegrationTest` |
+| SEC-11 | R | Recovery codes, lockout | A recovery code works once; wrong codes count towards lockout | 〃 |
+| SEC-12 | R | Forgot password | Same answer for unknown e-mails; link single-use, 30 min | 〃 |
+| SEC-13 | R | Registration domains | Only company domains; can be switched off | 〃 |
+| SEC-14 | A | Company-account-only user | No password works | 〃 |
+| SEC-15 | N | Admin security overview | Shows 2FA gaps; admin can reset someone's 2FA | 〃 |
+| SEC-16 | B | Brute force | 11th sign-in in a minute → 429 with `Retry-After` | `RateLimitAndHeadersIntegrationTest` |
+| SEC-17 | N | Security headers | Strict CSP without inline scripts, nosniff, Permissions-Policy, COOP/CORP | 〃 |
+| SEC-18 | A | Live stream | Needs a one-time ticket; tokens never in URLs; ticket cannot be reused | 〃 |
+| SEC-19 | N | Demo mode | Demo accounts listed only in demo mode | 〃 |
+| SSO-01 | N | Start Google sign-in | Redirect has state, PKCE (S256), nonce, domain hint; state cookie HttpOnly | `GoogleSignInIntegrationTest` |
+| SSO-02 | R | Pre-registered technician | Linked on first Google sign-in, keeps the admin-given role | 〃 |
+| SSO-03 | R | New company person | Becomes Employee, asked to complete profile | 〃 |
+| SSO-04 | I | Personal / unverified / forged | Refused | 〃 |
+| SSO-05 | E | Account takeover attempt | A second Google account cannot claim a linked account | 〃 |
+| SSO-06 | R | Auto-provisioning off | Only pre-registered people get in | 〃 |
+| SSO-07 | E | Open redirect | Only same-site paths accepted after sign-in | 〃 |
+| ATT-01 | I | Disguised and dangerous files | Real PNG accepted; HTML renamed `.png`, SVG and EICAR refused | `AttachmentAndKnowledgeIntegrationTest` |
+| ATT-02 | A | Download privacy | Only people who can see the incident; served with nosniff and sandbox CSP | 〃 |
+| KB-01 | A | Knowledge search | Finds by meaning; internal runbooks hidden from employees | 〃 |
+| KB-02 | N | Self-help while reporting | Matching articles suggested; "this fixed it" counts a deflection | 〃 |
+| KB-03 | R | Voting | One vote per person; changing a vote moves it | 〃 |
+| KB-04 | A | Writing articles | Technicians draft from a resolved incident; employees cannot write | 〃 |
+| MAJ-01 | N | Declare major incident | Team lead declares from a correlation cluster, linking related incidents | `MajorIncidentAndEmailIntegrationTest` |
+| MAJ-02 | N | Major incident lifecycle | Updates reach everyone affected; "I'm affected too"; resolving the major resolves every linked incident | 〃 |
+| BULK-01 | R | Bulk actions | One action on many incidents; each item succeeds or fails on its own | 〃 |
+| MAIL-01 | N/A | E-mail reply | Answers the open question and restarts the SLA; forged secret and outsiders refused | 〃 |
+| MAIL-02 | N | New e-mail | Opens an incident with the service guessed from the text | 〃 |
+| ADM-01 | I | CSV import | People pre-registered with roles; bad rows reported, not fatal | `UserAdministrationIntegrationTest` |
+| ADM-02 | R | Role-change rules | Technician with history cannot be demoted; nobody changes their own role | 〃 |
+| ADM-03 | N | Unlock, sign out everywhere | Locked account can sign in again; all its sessions end | 〃 |
+| ADM-04 | I | Allowed domains | Validated and tidied | 〃 |
+| UNIT-01–08 | N/B/E | Security building blocks | RFC 6238 test vector, ±1 step drift only; AES-GCM tamper detection; token-bucket refill; password policy; magic-byte detection; reply parsing; domain lists; startup refuses dev secrets | `SecurityBuildingBlocksTest` |
+| FE-01–07 | N/E | API client | Bearer header, nothing in localStorage; 401 → one refresh → retry; concurrent refreshes share one request; CSRF header on cookie endpoints; failed refresh ends the session; problem JSON → `ApiError`; query strings | `frontend/src/lib/api.test.ts` |
+| FE-08–10 | N/B | Formatting | Durations, SLA time left/overdue, initials, labels | `format.test.ts` |
+| FE-11–12 | N | UI building blocks | Skill chips add/dedupe/remove by keyboard; full-page empty state is an `h1` | `ui.test.tsx` |
+| FE-13–16 | N/I | Sign-in page | Demo accounts folded until opened, one-click sign-in; wrong password message; 2FA step accepts digits only and needs six; Google button explains when not configured | `Login.test.tsx` |
+

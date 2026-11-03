@@ -35,14 +35,31 @@ public class AuditService {
                 .build());
     }
 
+    /** An incident-related action that is not a lifecycle event (attachments, major-incident updates). */
+    @Transactional
+    public void recordIncidentAction(User actor, AuditAction action, Long incidentId, String incidentNumber,
+                                     String description) {
+        repository.save(AuditRecord.builder(action, clock.instant())
+                .actor(actor == null ? null : actor.getId(), actor == null ? "System" : actor.getFullName(),
+                        actor == null ? null : actor.getRole().name())
+                .incident(incidentId, incidentNumber)
+                .description(description)
+                .build());
+    }
+
     /** Security events are saved in their own transaction so a failed login is logged even though it throws. */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void recordSecurityEvent(User user, String email, AuditAction action, String description) {
         repository.save(AuditRecord.builder(action, clock.instant())
-                .actor(user == null ? null : user.getId(), user == null ? email : user.getFullName(),
+                .actor(user == null ? null : user.getId(), user == null ? (email == null || email.isBlank() ? "unknown" : email) : user.getFullName(),
                         user == null ? null : user.getRole().name())
                 .description(description)
                 .build());
+    }
+
+    @Transactional(readOnly = true)
+    public long count(AuditAction action, Instant since) {
+        return repository.countByActionAndOccurredAtAfter(action, since);
     }
 
     @Transactional(readOnly = true)
@@ -53,7 +70,16 @@ public class AuditService {
     @Transactional(readOnly = true)
     public Page<AuditRecord> search(String incidentNumber, String actor, AuditAction action, Instant from, Instant to,
                                     Pageable pageable) {
+        return search(incidentNumber, actor, action, null, from, to, pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<AuditRecord> search(String incidentNumber, String actor, AuditAction action,
+                                    java.util.Collection<AuditAction> anyOf, Instant from, Instant to, Pageable pageable) {
         List<Specification<AuditRecord>> specs = new ArrayList<>();
+        if (anyOf != null && !anyOf.isEmpty()) {
+            specs.add((r, q, cb) -> r.get("action").in(anyOf));
+        }
         if (incidentNumber != null && !incidentNumber.isBlank()) {
             specs.add((r, q, cb) -> cb.equal(cb.upper(r.get("incidentNumber")), incidentNumber.trim().toUpperCase()));
         }

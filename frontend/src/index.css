@@ -17,7 +17,7 @@
   --ink: #15181e;
   --ink-2: #3a414c;
   --muted: #5d6573;
-  --faint: #8a919c;
+  --faint: #666d79;   /* 4.5:1+ on every light surface (WCAG AA) */
   --line: #e3e6eb;
   --line-strong: #cfd4db;
 
@@ -27,11 +27,11 @@
   --accent-soft: #e3f1f0;
   --accent-text: #0c5c60;
 
-  --p1: #c8372d;  --p1-soft: #fbe9e7;
-  --p2: #b86e00;  --p2-soft: #fbf0dc;
-  --p3: #3d6fb4;  --p3-soft: #e7eef8;
-  --p4: #6b7280;  --p4-soft: #eef0f2;
-  --ok: #2f7d4f;  --ok-soft: #e4f2e9;
+  --p1: #b8322a;  --p1-soft: #fbe9e7;  --p1-ink: #ffffff;
+  --p2: #945800;  --p2-soft: #fbf0dc;
+  --p3: #335f9c;  --p3-soft: #e7eef8;
+  --p4: #5f6672;  --p4-soft: #eef0f2;
+  --ok: #2a7047;  --ok-soft: #e4f2e9;
 
   --focus: #0f6b6f;
   /* chart series, validated for colour-blind separation and contrast (dataviz validator) */
@@ -51,7 +51,7 @@
   --ink: #e8eaed;
   --ink-2: #c4c9d0;
   --muted: #9aa3af;
-  --faint: #6f7884;
+  --faint: #8d96a2;   /* 4.5:1+ on every dark surface */
   --line: #2a3038;
   --line-strong: #39414b;
 
@@ -61,7 +61,7 @@
   --accent-soft: #1b3433;
   --accent-text: #7fcbc6;
 
-  --p1: #f07167;  --p1-soft: #3a2224;
+  --p1: #f07167;  --p1-soft: #3a2224;  --p1-ink: #1f0a09;
   --p2: #f2a541;  --p2-soft: #392d1c;
   --p3: #7aa7e6;  --p3-soft: #1f2a3a;
   --p4: #a3abb6;  --p4-soft: #262b32;
@@ -96,6 +96,7 @@
   --color-accent-text: var(--accent-text);
   --color-p1: var(--p1);
   --color-p1-soft: var(--p1-soft);
+  --color-p1-ink: var(--p1-ink);
   --color-p2: var(--p2);
   --color-p2-soft: var(--p2-soft);
   --color-p3: var(--p3);
@@ -162,6 +163,24 @@
   50% { opacity: 0.45; }
 }
 .fuse-live { animation: fuse-pulse 1.8s ease-in-out infinite; }
+
+/* Sign-in illustration: fuses slowly burn from --fuse-from to --fuse-to and back. */
+@keyframes fuse-burn {
+  from { width: var(--fuse-from); }
+  to { width: var(--fuse-to); }
+}
+.fuse-burn {
+  width: var(--fuse-to);
+  animation: fuse-burn 9s ease-in-out infinite alternate;
+}
+
+/* Quiet dotted texture behind the sign-in brand panel. */
+.login-dots {
+  background-image: radial-gradient(var(--line-strong) 0.8px, transparent 0.8px);
+  background-size: 18px 18px;
+  mask-image: radial-gradient(ellipse at 30% 35%, black 0%, transparent 72%);
+  opacity: 0.7;
+}
 
 @keyframes slide-in {
   from { transform: translateY(-4px); opacity: 0; }

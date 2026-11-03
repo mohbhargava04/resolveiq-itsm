@@ -104,6 +104,18 @@ public class GlobalExceptionHandler {
                 "No such endpoint", request));
     }
 
+    @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
+    ResponseEntity<ProblemDetail> handleTooLarge(Exception ex, HttpServletRequest request) {
+        return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body(problem(ErrorCode.PAYLOAD_TOO_LARGE,
+                "Files can be at most 5 MB", request));
+    }
+
+    @ExceptionHandler({org.springframework.web.multipart.MultipartException.class,
+            org.springframework.web.multipart.support.MissingServletRequestPartException.class})
+    ResponseEntity<ProblemDetail> handleMultipart(Exception ex, HttpServletRequest request) {
+        return ResponseEntity.badRequest().body(problem(ErrorCode.VALIDATION_FAILED, "Choose a file to upload", request));
+    }
+
     /** A browser closed its live-update stream (tab closed, laptop asleep). Nothing to report. */
     @ExceptionHandler(AsyncRequestNotUsableException.class)
     void handleClientGone() {
@@ -112,9 +124,13 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     ResponseEntity<ProblemDetail> handleUnexpected(Exception ex, HttpServletRequest request) {
-        log.error("Unexpected error on {} {}", request.getMethod(), request.getRequestURI(), ex);
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(problem(ErrorCode.INTERNAL_ERROR,
-                "Something went wrong on our side. The error has been logged.", request));
+        // a short reference lets support find this exact failure in the log without showing internals
+        String reference = java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase(java.util.Locale.ROOT);
+        log.error("Unexpected error [ref {}] on {} {}", reference, request.getMethod(), request.getRequestURI(), ex);
+        ProblemDetail problem = problem(ErrorCode.INTERNAL_ERROR,
+                "Something went wrong on our side. Quote reference " + reference + " if you report it.", request);
+        problem.setProperty("reference", reference);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(problem);
     }
 
     private static ProblemDetail problem(ErrorCode code, String detail, HttpServletRequest request) {

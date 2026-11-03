@@ -10,4 +10,6 @@ public interface AuditRepository extends JpaRepository<AuditRecord, Long>, JpaSp
     List<AuditRecord> findByIncidentNumberOrderByOccurredAtAscIdAsc(String incidentNumber);
 
     List<AuditRecord> findTop15ByIncidentNumberIsNotNullOrderByOccurredAtDescIdDesc();
+
+    long countByActionAndOccurredAtAfter(AuditAction action, java.time.Instant after);
 }

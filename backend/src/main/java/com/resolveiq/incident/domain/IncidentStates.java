@@ -126,6 +126,12 @@ public final class IncidentStates {
         }
 
         @Override
+        public void resolveWithMajorIncident(Incident incident, Incident major, Resolution resolution, Actor actor, Instant at) {
+            incident.applyMajorResolution(resolution, actor, at);
+            incident.moveTo(RESOLVED, actor, at, "Resolved with major incident " + major.getNumber());
+        }
+
+        @Override
         public boolean allowsDetailEdits() {
             return true;
         }
@@ -148,6 +154,12 @@ public final class IncidentStates {
             incident.applyAssignment(technician, strategy, actor, at);
             // A new owner must acknowledge again, so the incident always returns to ASSIGNED.
             incident.moveTo(ASSIGNED, actor, at, "Re-assigned to " + technician.getFullName());
+        }
+
+        @Override
+        public void resolveWithMajorIncident(Incident incident, Incident major, Resolution resolution, Actor actor, Instant at) {
+            incident.applyMajorResolution(resolution, actor, at);
+            incident.moveTo(RESOLVED, actor, at, "Resolved with major incident " + major.getNumber());
         }
 
         @Override
@@ -245,6 +257,12 @@ public final class IncidentStates {
         public void provideInformation(Incident incident, String answer, Actor actor, Instant at) {
             incident.applyInformationResponse(answer, actor, at);
             incident.moveTo(IN_PROGRESS, actor, at, "Reporter provided the requested information");
+        }
+
+        @Override
+        public void resolveWithMajorIncident(Incident incident, Incident major, Resolution resolution, Actor actor, Instant at) {
+            incident.applyMajorResolution(resolution, actor, at);
+            incident.moveTo(RESOLVED, actor, at, "Resolved with major incident " + major.getNumber());
         }
 
         @Override

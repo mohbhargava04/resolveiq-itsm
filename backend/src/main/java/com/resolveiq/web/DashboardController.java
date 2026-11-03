@@ -45,10 +45,16 @@ public class DashboardController {
     private final AssignmentService assignment;
     private final AuditRepository audit;
     private final Clock clock;
+    private final com.resolveiq.knowledge.KnowledgeArticleRepository articles;
+    private final com.fasterxml.jackson.databind.ObjectMapper json;
 
     public DashboardController(CurrentUserService currentUser, IncidentRepository incidents, IncidentMapper mapper,
                                ReportService reports, IncidentCorrelator correlator, SlaRiskAssessor risk,
-                               AssignmentService assignment, AuditRepository audit, Clock clock) {
+                               AssignmentService assignment, AuditRepository audit, Clock clock,
+                               com.resolveiq.knowledge.KnowledgeArticleRepository articles,
+                               com.fasterxml.jackson.databind.ObjectMapper json) {
+        this.articles = articles;
+        this.json = json;
         this.currentUser = currentUser;
         this.incidents = incidents;
         this.mapper = mapper;
@@ -114,7 +120,23 @@ public class DashboardController {
                     .limit(8)
                     .map(e -> Map.of("incident", mapper.toSummary(e.getKey()), "risk", e.getValue()))
                     .toList());
-            result.put("correlations", correlator.findClusters(now));
+            Map<String, Incident> byNumber = new java.util.HashMap<>();
+            active.forEach(i -> byNumber.put(i.getNumber(), i));
+            result.put("correlations", correlator.findClusters(now).stream().map(c -> {
+                Map<String, Object> m = json.convertValue(c, new com.fasterxml.jackson.core.type.TypeReference<LinkedHashMap<String, Object>>() { });
+                // if the outage is already being handled as a major incident, say which one
+                c.incidentNumbers().stream().map(byNumber::get).filter(Objects::nonNull)
+                        .map(i -> i.isMajor() ? i : i.getMajorParent()).filter(Objects::nonNull)
+                        .findFirst().ifPresent(major -> m.put("majorNumber", major.getNumber()));
+                // the incident to coordinate from: one reported against the root service itself, else the earliest
+                m.put("suggestedMajor", c.incidentNumbers().stream().map(byNumber::get).filter(Objects::nonNull)
+                        .filter(i -> i.getService().getCode().equals(c.rootServiceCode()))
+                        .map(Incident::getNumber).findFirst().orElse(c.incidentNumbers().getFirst()));
+                return m;
+            }).toList());
+            result.put("majorIncidents", active.stream().filter(Incident::isMajor)
+                    .map(i -> mapper.toBanner(i, me)).toList());
+            result.put("knowledge", Map.of("deflections", articles.totalDeflections(), "views", articles.totalViews()));
             result.put("byPriority", reports.byPriority(null));
             result.put("recentActivity", audit.findTop15ByIncidentNumberIsNotNullOrderByOccurredAtDescIdDesc().stream()
                     .map(IncidentMapper::toAudit).toList());

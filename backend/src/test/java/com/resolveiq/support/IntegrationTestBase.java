@@ -107,6 +107,45 @@ public abstract class IntegrationTestBase {
         return person.get("name").asText().split(" ")[0].toLowerCase();
     }
 
+    /** Signs in and returns the full response, including the refresh cookie. */
+    protected MvcResult signIn(String email, String password) throws Exception {
+        return mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json.writeValueAsString(Map.of("email", email, "password", password)))).andReturn();
+    }
+
+    protected static String refreshCookie(MvcResult r) {
+        jakarta.servlet.http.Cookie c = r.getResponse().getCookie("riq_refresh");
+        return c == null ? null : c.getValue();
+    }
+
+    protected JsonNode body(MvcResult r) throws Exception {
+        String s = r.getResponse().getContentAsString();
+        return s.isBlank() ? null : json.readTree(s);
+    }
+
+    /** POST /api/auth/refresh with the cookie and the anti-CSRF header. */
+    protected MvcResult refresh(String refreshToken) throws Exception {
+        var req = org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/auth/refresh")
+                .header("X-Requested-With", "ResolveIQ");
+        if (refreshToken != null) {
+            req.cookie(new jakarta.servlet.http.Cookie("riq_refresh", refreshToken));
+        }
+        return mvc.perform(req).andReturn();
+    }
+
+    /** GET with an explicit bearer token (not the cached per-user one). */
+    protected Response getWithToken(String token, String url) throws Exception {
+        MvcResult r = mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get(url)
+                .header("Authorization", "Bearer " + token)).andReturn();
+        String body = r.getResponse().getContentAsString();
+        return new Response(r.getResponse().getStatus(), body.isBlank() ? null : json.readTree(body));
+    }
+
+    protected void forgetToken(String user) {
+        tokens.remove(user);
+    }
+
     public record Response(int status, JsonNode body) {
         public String code() {
             return body == null || body.get("code") == null ? null : body.get("code").asText();

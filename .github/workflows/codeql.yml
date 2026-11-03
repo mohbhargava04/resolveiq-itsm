@@ -1,0 +1,47 @@
+# CodeQL static analysis: looks for injection, XSS, path traversal, unsafe deserialisation and
+# similar bugs in both the Java backend and the TypeScript frontend. Findings appear under the
+# repository's Security -> Code scanning tab.
+name: CodeQL
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "17 3 * * 1"   # every Monday, so new CodeQL rules are applied to unchanged code too
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  analyze:
+    name: Analyse ${{ matrix.language }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: java-kotlin
+            build-mode: none
+          - language: javascript-typescript
+            build-mode: none
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        if: matrix.language == 'java-kotlin'
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+          queries: security-extended
+          config: |
+            paths-ignore:
+              - backend/src/main/resources/static/**
+              - frontend/node_modules/**
+      - uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{ matrix.language }}"

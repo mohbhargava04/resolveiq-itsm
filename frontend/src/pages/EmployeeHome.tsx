@@ -4,7 +4,8 @@ import { CircleCheck, Inbox, MessageCircleQuestion, Plus } from 'lucide-react'
 import { api } from '@/lib/api'
 import { useUser } from '@/lib/auth'
 import { ago } from '@/lib/format'
-import type { Dashboard } from '@/lib/types'
+import type { ArticleSummary, Dashboard } from '@/lib/types'
+import { ArticleCard } from './KnowledgeBase'
 import { Button, EmptyState, Panel, Skeleton } from '@/components/ui'
 import { IncidentList, PriorityBadge } from '@/components/incident-bits'
 
@@ -17,6 +18,7 @@ export default function EmployeeHome() {
   const user = useUser()
   const { data, isLoading } = useQuery({ queryKey: ['dashboard'], queryFn: () => api.get<Dashboard>('/dashboard') })
   const first = user.fullName.split(' ')[0]
+  const popular = useQuery({ queryKey: ['kb', 'popular'], queryFn: () => api.get<ArticleSummary[]>('/kb'), staleTime: 300_000 })
 
   return (
     <div className="space-y-6">
@@ -87,6 +89,18 @@ export default function EmployeeHome() {
           />
         )}
       </Panel>
+
+      {(popular.data?.length ?? 0) > 0 && (
+        <section aria-labelledby="kb-heading">
+          <div className="mb-2 flex items-baseline justify-between">
+            <h2 id="kb-heading" className="text-[15px] font-semibold">Quick fixes</h2>
+            <Link to="/kb" className="text-[13px] font-medium text-accent-text hover:underline">Browse the knowledge base</Link>
+          </div>
+          <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {popular.data!.slice(0, 3).map((a) => <ArticleCard key={a.id} a={a} compact />)}
+          </ul>
+        </section>
+      )}
     </div>
   )
 }

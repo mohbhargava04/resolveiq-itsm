@@ -2,12 +2,15 @@ import { useMemo, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Copy, Sparkles, Timer } from 'lucide-react'
+import { CheckCircle2, Copy, FileText, Lightbulb, Paperclip, Siren, Sparkles, Timer, X } from 'lucide-react'
 import { api, ApiError } from '@/lib/api'
 import { cn, duration, LEVEL_LABEL, PRIORITY_LABEL, STATUS_LABEL } from '@/lib/format'
 import { useDebounced } from '@/lib/useDebounced'
-import type { CategorySuggestion, CategoryView, Level, PriorityPreview, ReportResponse, ServiceView, SimilarIncident } from '@/lib/types'
-import { Button, ErrorNote, Field, Input, PageHeader, Segmented, Select, Skeleton, Textarea } from '@/components/ui'
+import type {
+  ArticleSummary, ArticleView, CategorySuggestion, CategoryView, Level, MajorBanner, PriorityPreview, ReportResponse, ServiceView, SimilarIncident,
+} from '@/lib/types'
+import { Button, Dialog, ErrorNote, Field, Input, PageHeader, Segmented, Select, Skeleton, Textarea } from '@/components/ui'
+import { ACCEPT } from '@/components/incident-collab'
 import { PriorityBadge } from '@/components/incident-bits'
 
 const IMPACT_HINT: Record<Level, string> = {
@@ -35,6 +38,9 @@ export default function ReportIncident() {
   const [urgency, setUrgency] = useState<Level>('MEDIUM')
   const [affectedUsers, setAffectedUsers] = useState('1')
   const [duplicates, setDuplicates] = useState<{ number: string; title: string; status: string; score: number }[] | null>(null)
+  const [files, setFiles] = useState<File[]>([])
+  const [article, setArticle] = useState<number | null>(null)
+  const addFiles = (list: FileList | File[]) => setFiles((f) => [...f, ...[...list]].slice(0, 10))
 
   const services = useQuery({ queryKey: ['services'], queryFn: () => api.get<ServiceView[]>('/services'), staleTime: 300_000 })
   const categories = useQuery({ queryKey: ['categories'], queryFn: () => api.get<CategoryView[]>('/categories'), staleTime: 300_000 })
@@ -65,11 +71,36 @@ export default function ReportIncident() {
     placeholderData: (p) => p,
   })
 
+  // self-help: knowledge-base articles that match what is being typed
+  const articles = useQuery({
+    queryKey: ['assist', 'kb', serviceCode, text],
+    queryFn: () => api.post<ArticleSummary[]>('/kb/suggest', { text, serviceCode: serviceCode || undefined }),
+    enabled: text.length >= 12,
+    placeholderData: (p) => p,
+  })
+
+  // a major incident already covers this service: join it instead of reporting again
+  const majors = useQuery({ queryKey: ['major-incidents'], queryFn: () => api.get<MajorBanner[]>('/major-incidents') })
+  const majorHere = majors.data?.find((m) => m.service.code === serviceCode)
+  const affected = useMutation({
+    mutationFn: (n: string) => api.post<{ number: string }>(`/major-incidents/${n}/affected`, { details: description || undefined }),
+    onSuccess: (r) => { qc.invalidateQueries({ queryKey: ['major-incidents'] }); toast.success('You will get every update on this outage'); navigate(`/incidents/${r.number}`) },
+  })
+
   const report = useMutation({
-    mutationFn: (acknowledgeDuplicates: boolean) => api.post<ReportResponse>('/incidents', {
-      title, description, serviceCode, categoryCode: categoryCode || undefined, impact, urgency,
-      affectedUsers: users, acknowledgeDuplicates,
-    }),
+    mutationFn: async (acknowledgeDuplicates: boolean) => {
+      const res = await api.post<ReportResponse>('/incidents', {
+        title, description, serviceCode, categoryCode: categoryCode || undefined, impact, urgency,
+        affectedUsers: users, acknowledgeDuplicates,
+      })
+      // attach files after the incident exists; a rejected file does not undo the report
+      const failed: string[] = []
+      for (const f of files) {
+        try { await api.upload(`/incidents/${res.incident.number}/attachments`, f) } catch (e) { failed.push(`${f.name}: ${e instanceof Error ? e.message : 'failed'}`) }
+      }
+      if (failed.length) toast.error('Some files were not attached', { description: failed.join('\n') })
+      return res
+    },
     onSuccess: (res) => {
       qc.invalidateQueries({ queryKey: ['dashboard'] })
       qc.invalidateQueries({ queryKey: ['incidents'] })
@@ -110,8 +141,30 @@ export default function ReportIncident() {
 
           <Field label="Details" htmlFor="desc" hint="What did you try, what did you see, when did it start?" error={fieldErrors.description}>
             <Textarea id="desc" rows={5} value={description} onChange={(e) => setDescription(e.target.value)} maxLength={4000} required
+              onPaste={(e) => { const imgs = [...e.clipboardData.files].filter((f) => f.type.startsWith('image/')); if (imgs.length) { e.preventDefault(); addFiles(imgs.map((f) => new File([f], `screenshot-${Date.now()}.png`, { type: f.type }))) } }}
               placeholder="The payment page spins for about a minute and then shows 'transaction failed'. It started around 10:15." />
           </Field>
+
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <label className="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-md border border-line-strong px-2.5 text-[13px] font-medium text-ink-2 hover:bg-surface-2 focus-within:ring-3 focus-within:ring-accent/20">
+                <Paperclip className="size-3.5" aria-hidden /> Attach screenshots or logs
+                <input type="file" multiple accept={ACCEPT} className="sr-only" onChange={(e) => { if (e.target.files) addFiles(e.target.files); e.target.value = '' }} />
+              </label>
+              <span className="text-xs text-faint">or paste a screenshot into the details · up to 5 MB each</span>
+            </div>
+            {files.length > 0 && (
+              <ul className="mt-2 flex flex-wrap gap-2">
+                {files.map((f, idx) => (
+                  <li key={idx} className="inline-flex max-w-full items-center gap-1.5 rounded-md bg-surface-2 py-1 pl-2 pr-1 text-xs">
+                    <FileText className="size-3.5 shrink-0 text-muted" aria-hidden />
+                    <span className="truncate">{f.name}</span>
+                    <button type="button" aria-label={`Remove ${f.name}`} onClick={() => setFiles(files.filter((_, j) => j !== idx))} className="rounded p-0.5 text-faint hover:text-ink cursor-pointer"><X className="size-3" /></button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Affected service" htmlFor="service" error={fieldErrors.serviceCode}>
@@ -165,7 +218,35 @@ export default function ReportIncident() {
           </div>
         </form>
 
-        <aside className="space-y-4 lg:sticky lg:top-20 lg:self-start" aria-live="polite">
+        <aside aria-label="Suggestions" className="space-y-4 lg:sticky lg:top-20 lg:self-start" aria-live="polite">
+          {majorHere && (
+            <AssistCard title="Known outage" icon={<Siren className="size-4" />} tone="danger">
+              <p className="text-[13px]"><span className="font-medium">{majorHere.title}</span></p>
+              <p className="mt-1 text-xs text-muted">{majorHere.stageLabel}{majorHere.latestUpdate ? ` — ${majorHere.latestUpdate.message}` : ''}</p>
+              {majorHere.affectsMe ? (
+                <p className="mt-3 text-xs font-medium text-muted">You're already receiving its updates.</p>
+              ) : (
+                <Button size="sm" className="mt-3" variant="primary" loading={affected.isPending} onClick={() => affected.mutate(majorHere.number)}>I'm affected by this — keep me updated</Button>
+              )}
+            </AssistCard>
+          )}
+
+          {(articles.data?.length ?? 0) > 0 && (
+            <AssistCard title="Fix it yourself?" icon={<Lightbulb className="size-4" />}>
+              <p className="mb-2 text-[13px] text-muted">These articles solved similar problems for others.</p>
+              <ul className="space-y-1.5">
+                {articles.data!.map((a) => (
+                  <li key={a.id}>
+                    <button type="button" onClick={() => setArticle(a.id)} className="block w-full rounded-lg border border-line px-3 py-2 text-left hover:bg-surface-2 cursor-pointer">
+                      <span className="block text-[13px] font-medium">{a.title}</span>
+                      <span className="mt-0.5 block text-xs text-muted">Solved {a.deflections} problem{a.deflections === 1 ? '' : 's'} · {a.helpfulVotes} found it helpful</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </AssistCard>
+          )}
+
           <AssistCard title="Priority and deadline" icon={<Timer className="size-4" />}>
             {!serviceCode ? (
               <p className="text-[13px] text-muted">Choose the affected service to see the priority this incident will get.</p>
@@ -240,15 +321,40 @@ export default function ReportIncident() {
           )}
         </aside>
       </div>
+      {article !== null && <ArticlePreview id={article} onClose={() => setArticle(null)} onSolved={() => { toast.success('Glad it is fixed — no incident needed.'); navigate('/') }} />}
     </div>
   )
 }
 
-function AssistCard({ title, icon, children, tone }: { title: string; icon: React.ReactNode; children: React.ReactNode; tone?: 'warn' }) {
+/** Reads an article without leaving the half-written report; "this fixed it" counts a deflection. */
+function ArticlePreview({ id, onClose, onSolved }: { id: number; onClose: () => void; onSolved: () => void }) {
+  const a = useQuery({ queryKey: ['kb-article', String(id)], queryFn: () => api.get<ArticleView>(`/kb/${id}`) })
+  const solved = useMutation({ mutationFn: () => api.post(`/kb/${id}/solved-my-problem`), onSuccess: onSolved })
   return (
-    <section className={cn('rounded-xl border bg-surface p-4', tone === 'warn' ? 'border-p2/40' : 'border-line')}>
+    <Dialog open onOpenChange={(o) => !o && onClose()} title={a.data?.title ?? 'Article'} width={620}
+      footer={<><Button variant="ghost" onClick={onClose}>Not quite — continue my report</Button>
+        <Button variant="primary" icon={<CheckCircle2 className="size-4" />} loading={solved.isPending} onClick={() => solved.mutate()}>This fixed it</Button></>}>
+      {!a.data ? <Skeleton className="h-40" /> : (
+        <div className="space-y-4 text-[13.5px]">
+          <div>
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-faint">When this happens</h3>
+            <p className="mt-1 whitespace-pre-line text-ink-2">{a.data.symptoms}</p>
+          </div>
+          <div className="rounded-lg bg-surface-2 p-4">
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-faint">How to fix it</h3>
+            <p className="mt-1 whitespace-pre-line leading-relaxed">{a.data.solution}</p>
+          </div>
+        </div>
+      )}
+    </Dialog>
+  )
+}
+
+function AssistCard({ title, icon, children, tone }: { title: string; icon: React.ReactNode; children: React.ReactNode; tone?: 'warn' | 'danger' }) {
+  return (
+    <section className={cn('rounded-xl border bg-surface p-4', tone === 'warn' ? 'border-p2/40' : tone === 'danger' ? 'border-p1/40 bg-p1-soft/40' : 'border-line')}>
       <h2 className="mb-2.5 flex items-center gap-2 text-[13.5px] font-semibold">
-        <span className={tone === 'warn' ? 'text-p2' : 'text-accent-text'}>{icon}</span>{title}
+        <span className={tone === 'warn' ? 'text-p2' : tone === 'danger' ? 'text-p1' : 'text-accent-text'}>{icon}</span>{title}
       </h2>
       {children}
     </section>

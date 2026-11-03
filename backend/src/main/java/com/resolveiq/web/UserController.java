@@ -8,7 +8,10 @@ import com.resolveiq.user.domain.User;
 import com.resolveiq.web.dto.CommonDtos.Message;
 import com.resolveiq.web.dto.IncidentDtos.TextRequest;
 import com.resolveiq.web.dto.UserDtos.AvailabilityRequest;
+import com.resolveiq.security.mfa.MfaService;
+import com.resolveiq.web.dto.UserDtos.ChangeRoleRequest;
 import com.resolveiq.web.dto.UserDtos.CreateUserRequest;
+import com.resolveiq.web.dto.UserDtos.ImportUsersRequest;
 import com.resolveiq.web.dto.UserDtos.UpdateUserRequest;
 import com.resolveiq.web.dto.UserDtos.UserView;
 import io.swagger.v3.oas.annotations.Operation;
@@ -37,11 +40,14 @@ public class UserController {
     private final UserAdminService users;
     private final AssignmentService assignment;
     private final CurrentUserService currentUser;
+    private final MfaService mfa;
 
-    public UserController(UserAdminService users, AssignmentService assignment, CurrentUserService currentUser) {
+    public UserController(UserAdminService users, AssignmentService assignment, CurrentUserService currentUser,
+                          MfaService mfa) {
         this.users = users;
         this.assignment = assignment;
         this.currentUser = currentUser;
+        this.mfa = mfa;
     }
 
     @GetMapping("/api/admin/users")
@@ -72,6 +78,40 @@ public class UserController {
     public Message resetPassword(@PathVariable Long id, @Valid @RequestBody TextRequest r) {
         users.resetPassword(id, r.text(), currentUser.require());
         return new Message("Password reset");
+    }
+
+    @PostMapping("/api/admin/users/{id}/role")
+    @Operation(summary = "Change a person's role (clearance); their sessions end immediately")
+    public UserView changeRole(@PathVariable Long id, @Valid @RequestBody ChangeRoleRequest r) {
+        User changed = users.changeRole(id, r.role(), r.skills(), r.experienceLevel(), r.maxActiveIncidents(),
+                currentUser.require());
+        return UserView.of(changed, assignment.activeIncidentCount(changed.getId()));
+    }
+
+    @PostMapping("/api/admin/users/{id}/unlock")
+    public Message unlock(@PathVariable Long id) {
+        users.unlock(id, currentUser.require());
+        return new Message("Account unlocked");
+    }
+
+    @PostMapping("/api/admin/users/{id}/reset-mfa")
+    @Operation(summary = "Turn off two-factor authentication for someone who lost their phone")
+    public Message resetMfa(@PathVariable Long id) {
+        mfa.resetByAdmin(users.require(id), currentUser.require());
+        return new Message("Two-factor authentication reset");
+    }
+
+    @PostMapping("/api/admin/users/{id}/revoke-sessions")
+    @Operation(summary = "Sign someone out of every device now")
+    public Message revokeSessions(@PathVariable Long id) {
+        users.signOutEverywhere(id, currentUser.require());
+        return new Message("Signed out everywhere");
+    }
+
+    @PostMapping("/api/admin/users/import")
+    @Operation(summary = "Pre-register people from CSV: email,name,role,department,skills (skills separated by ;)")
+    public List<UserAdminService.ImportRow> importUsers(@Valid @RequestBody ImportUsersRequest r) {
+        return users.importCsv(r.csv(), currentUser.require());
     }
 
     @GetMapping("/api/technicians")

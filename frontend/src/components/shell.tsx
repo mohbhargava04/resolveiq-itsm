@@ -5,15 +5,15 @@ import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import * as Popover from '@radix-ui/react-popover'
 import { Command } from 'cmdk'
 import {
-  Activity, Bell, BookOpen, ClipboardList, Gauge, LayoutDashboard, ListChecks, LogOut, Menu, Monitor, Moon,
-  Network, PlusCircle, ScrollText, Search, Send, Settings2, ShieldCheck, Sun, Timer, Users, X,
+  Activity, Bell, BookOpen, ClipboardList, Gauge, LayoutDashboard, Library, ListChecks, LogOut, Menu, Monitor, Moon,
+  Network, PlusCircle, ScrollText, Search, Send, Settings2, ShieldCheck, Siren, Sun, Timer, UserRound, Users, X,
 } from 'lucide-react'
 import { api, qs } from '@/lib/api'
 import { useAuth, useUser } from '@/lib/auth'
 import { useTheme, type ThemePreference } from '@/lib/theme'
 import { useLiveUpdates } from '@/lib/live'
 import { ago, cn, ROLE_LABEL } from '@/lib/format'
-import type { IncidentSummary, NotificationView, Page } from '@/lib/types'
+import type { IncidentSummary, MajorBanner, NotificationView, Page } from '@/lib/types'
 import { Avatar, IconButton, Kbd, Switch } from './ui'
 import { PriorityBadge } from './incident-bits'
 
@@ -30,6 +30,7 @@ function useNavigation(): { label?: string; items: NavItem[] }[] {
         { to: '/', label: 'Home', icon: <LayoutDashboard className={ic} />, end: true },
         { to: '/report', label: 'Report an incident', icon: <PlusCircle className={ic} /> },
         { to: '/incidents', label: 'My incidents', icon: <ClipboardList className={ic} /> },
+        { to: '/kb', label: 'Knowledge base', icon: <Library className={ic} /> },
       ],
     }]
   }
@@ -45,6 +46,7 @@ function useNavigation(): { label?: string; items: NavItem[] }[] {
         { to: '/incidents', label: 'All incidents', icon: <ClipboardList className={ic} /> },
       ]
   work.push({ to: '/services', label: 'Service map', icon: <Network className={ic} /> })
+  work.push({ to: '/kb', label: 'Knowledge base', icon: <Library className={ic} /> })
   work.push({ to: '/report', label: 'Report an incident', icon: <PlusCircle className={ic} /> })
 
   const groups: { label?: string; items: NavItem[] }[] = [{ items: work }]
@@ -56,11 +58,12 @@ function useNavigation(): { label?: string; items: NavItem[] }[] {
       label: 'Administration',
       items: [
         { to: '/admin/users', label: 'People', icon: <Users className={ic} /> },
+        { to: '/admin/security', label: 'Security', icon: <ShieldCheck className={ic} /> },
         { to: '/admin/catalogue', label: 'Services & categories', icon: <BookOpen className={ic} /> },
         { to: '/admin/sla', label: 'SLA policies', icon: <Timer className={ic} /> },
         { to: '/admin/settings', label: 'Automation', icon: <Settings2 className={ic} /> },
         { to: '/admin/audit', label: 'Audit log', icon: <ScrollText className={ic} /> },
-        { to: '/admin/outbox', label: 'Delivery log', icon: <Send className={ic} /> },
+        { to: '/admin/outbox', label: 'E-mail & SMS', icon: <Send className={ic} /> },
       ],
     })
   }
@@ -145,7 +148,7 @@ function AvailabilityFooter() {
   )
 }
 
-function ThemeMenu() {
+export function ThemeMenu() {
   const { preference, resolved, setPreference } = useTheme()
   const options: { value: ThemePreference; label: string; icon: ReactNode }[] = [
     { value: 'light', label: 'Light', icon: <Sun className="size-4" /> },
@@ -207,7 +210,7 @@ function NotificationsMenu() {
         <IconButton label={count ? `Notifications, ${count} unread` : 'Notifications'} className="relative">
           <Bell className="size-4" />
           {count > 0 && (
-            <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-p1 px-1 text-[10px] font-semibold text-white tabular">
+            <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-p1 px-1 text-[10px] font-semibold text-p1-ink tabular">
               {count > 99 ? '99+' : count}
             </span>
           )}
@@ -261,7 +264,7 @@ function UserMenu() {
     <DropdownMenu.Root>
       <DropdownMenu.Trigger asChild>
         <button className="flex items-center gap-2 rounded-lg py-1 pl-1 pr-2 hover:bg-surface-2 cursor-pointer" aria-label="Account menu">
-          <Avatar name={user.fullName} size={28} />
+          <Avatar name={user.fullName} src={user.avatarUrl} size={28} />
           <span className="hidden text-left leading-tight md:block">
             <span className="block text-[13px] font-medium">{user.fullName}</span>
             <span className="block text-[11px] text-muted">{ROLE_LABEL[user.role]}</span>
@@ -276,7 +279,13 @@ function UserMenu() {
           </div>
           <DropdownMenu.Separator className="my-1 h-px bg-line" />
           <DropdownMenu.Item
-            onSelect={() => { logout(); navigate('/login') }}
+            onSelect={() => navigate('/profile')}
+            className="flex h-8 cursor-pointer items-center gap-2 rounded-md px-2.5 text-[13px] text-ink-2 outline-none data-[highlighted]:bg-surface-2"
+          >
+            <UserRound className="size-4" /> Profile & security
+          </DropdownMenu.Item>
+          <DropdownMenu.Item
+            onSelect={async () => { await logout(); navigate('/login') }}
             className="flex h-8 cursor-pointer items-center gap-2 rounded-md px-2.5 text-[13px] text-ink-2 outline-none data-[highlighted]:bg-surface-2"
           >
             <LogOut className="size-4" /> Sign out
@@ -357,6 +366,13 @@ function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenChange: (
 export function AppShell() {
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [mobileNav, setMobileNav] = useState(false)
+  // Escape closes the mobile menu, like any other overlay
+  useEffect(() => {
+    if (!mobileNav) return
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setMobileNav(false) }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [mobileNav])
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -378,17 +394,20 @@ export function AppShell() {
 
   return (
     <div className="flex min-h-dvh">
-      <aside className="sticky top-0 hidden h-dvh w-[236px] shrink-0 border-r border-line bg-bg lg:block">
+      <a href="#main" className="sr-only z-50 rounded-lg bg-accent text-sm font-medium text-accent-ink no-underline shadow-pop focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:px-3 focus:py-2">
+        Skip to content
+      </a>
+      <div className="sticky top-0 hidden h-dvh w-[236px] shrink-0 border-r border-line bg-bg lg:block">
         <Sidebar />
-      </aside>
+      </div>
 
       {mobileNav && (
         <div className="fixed inset-0 z-40 lg:hidden">
           <div className="absolute inset-0 bg-black/30" onClick={() => setMobileNav(false)} />
-          <aside className="absolute inset-y-0 left-0 w-[260px] border-r border-line bg-bg shadow-pop animate-slide-in">
+          <div className="absolute inset-y-0 left-0 w-[260px] border-r border-line bg-bg shadow-pop animate-slide-in">
             <IconButton label="Close menu" className="absolute right-2 top-3" onClick={() => setMobileNav(false)}><X className="size-4" /></IconButton>
             <Sidebar onNavigate={() => setMobileNav(false)} />
-          </aside>
+          </div>
         </div>
       )}
 
@@ -410,12 +429,53 @@ export function AppShell() {
             <UserMenu />
           </div>
         </header>
-        <main className="mx-auto w-full max-w-[1240px] flex-1 px-4 py-6 sm:px-8 sm:py-8">
+        <MajorIncidentBar />
+        <main id="main" tabIndex={-1} className="mx-auto outline-none w-full max-w-[1240px] flex-1 px-4 py-6 sm:px-8 sm:py-8">
           <Outlet />
         </main>
       </div>
 
       <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
+    </div>
+  )
+}
+
+/**
+ * Status banner for open major incidents, shown to everyone. Employees can say they are affected
+ * with one click instead of filing another duplicate report.
+ */
+function MajorIncidentBar() {
+  const user = useUser()
+  const navigate = useNavigate()
+  const qc = useQueryClient()
+  const majors = useQuery({ queryKey: ['major-incidents'], queryFn: () => api.get<MajorBanner[]>('/major-incidents'), refetchInterval: 120_000 })
+  const affected = useMutation({
+    mutationFn: (n: string) => api.post<{ number: string }>(`/major-incidents/${n}/affected`, {}),
+    onSuccess: (r) => { qc.invalidateQueries({ queryKey: ['major-incidents'] }); navigate(`/incidents/${r.number}`) },
+  })
+  if (!majors.data?.length) return null
+  return (
+    <div role="status" aria-live="polite" className="border-b border-p1/25 bg-p1-soft">
+      {majors.data.map((m) => (
+        <div key={m.number} className="mx-auto flex max-w-[1240px] flex-wrap items-center gap-x-3 gap-y-1.5 px-4 py-2.5 text-[13px] sm:px-8">
+          <Siren className="size-4 shrink-0 text-p1" aria-hidden />
+          <span className="font-semibold text-p1">Major incident</span>
+          <span className="min-w-0 flex-1 truncate">
+            <span className="font-medium text-ink">{m.title}</span>
+            <span className="text-muted"> · {m.stageLabel}{m.latestUpdate ? ` — ${m.latestUpdate.message}` : ''}</span>
+          </span>
+          {user.role !== 'EMPLOYEE' ? (
+            <Link to={`/incidents/${m.number}`} className="font-medium text-p1 hover:underline">Open {m.number}</Link>
+          ) : m.affectsMe ? (
+            <span className="text-xs font-medium text-muted">You'll get updates</span>
+          ) : (
+            <button onClick={() => affected.mutate(m.number)} disabled={affected.isPending}
+              className="rounded-md border border-p1/30 bg-surface px-2.5 py-1 text-xs font-medium text-p1 hover:bg-p1/5 cursor-pointer disabled:opacity-60">
+              I'm affected too
+            </button>
+          )}
+        </div>
+      ))}
     </div>
   )
 }

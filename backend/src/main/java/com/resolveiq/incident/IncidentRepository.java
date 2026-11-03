@@ -69,4 +69,14 @@ public interface IncidentRepository extends JpaRepository<Incident, Long>, JpaSp
     @EntityGraph(attributePaths = {"reporter", "assignee", "service", "category"})
     @Query("select i from Incident i where i.duplicateOf.id = :parentId")
     List<Incident> findDuplicatesOf(Long parentId);
+
+    @org.springframework.data.jpa.repository.Query("select i from Incident i where i.major = true and i.status not in :done order by i.majorDeclaredAt desc")
+    java.util.List<Incident> findActiveMajor(java.util.Collection<com.resolveiq.incident.domain.IncidentStatus> done);
+
+    @org.springframework.data.jpa.repository.Query("select i from Incident i where i.major = true and i.majorDeclaredAt >= :since order by i.majorDeclaredAt desc")
+    java.util.List<Incident> findMajorSince(java.time.Instant since);
+
+    /** Incidents linked to a major incident (a query, so pending links are flushed first). */
+    @org.springframework.data.jpa.repository.Query("select i from Incident i where i.majorParent.id = :majorId order by i.createdAt, i.id")
+    java.util.List<Incident> findLinkedTo(Long majorId);
 }

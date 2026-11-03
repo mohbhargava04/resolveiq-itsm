@@ -55,6 +55,46 @@ public abstract class User extends BaseEntity {
     @Column(name = "last_login_at")
     private Instant lastLoginAt;
 
+    @Column(length = 80)
+    private String location;
+
+    @Column(name = "avatar_url", length = 500)
+    private String avatarUrl;
+
+    /** False for accounts created on first Google sign-in until the person confirms their details. */
+    @Column(name = "profile_completed", nullable = false)
+    private boolean profileCompleted = true;
+
+    /** False for company-account-only users, who have no usable password. */
+    @Column(name = "password_enabled", nullable = false)
+    private boolean passwordEnabled = true;
+
+    /** Google's stable account id ("sub" claim), set when the account is linked to Google sign-in. */
+    @Column(name = "google_subject", length = 64, unique = true)
+    private String googleSubject;
+
+    /**
+     * Incremented whenever existing sessions must stop working at once (deactivation, role change,
+     * password change, "sign out everywhere"). Access tokens carry the version they were issued with.
+     */
+    @Column(name = "token_version", nullable = false)
+    private int tokenVersion;
+
+    /** TOTP secret, encrypted at rest (AES-GCM) by {@code SecretCipher}. */
+    @Column(name = "mfa_secret", length = 200)
+    private String mfaSecret;
+
+    /** Secret generated during set-up, promoted to {@link #mfaSecret} once a valid code is entered. */
+    @Column(name = "mfa_pending_secret", length = 200)
+    private String mfaPendingSecret;
+
+    @Column(name = "mfa_enabled", nullable = false)
+    private boolean mfaEnabled;
+
+    /** Last TOTP time-step accepted, so the same code can never be replayed. */
+    @Column(name = "mfa_last_used_step")
+    private Long mfaLastUsedStep;
+
     protected User() {
         // for JPA
     }
@@ -98,8 +138,16 @@ public abstract class User extends BaseEntity {
 
     public void changePasswordHash(String newPasswordHash) {
         this.passwordHash = Objects.requireNonNull(newPasswordHash);
+        this.passwordEnabled = true;
         this.failedLoginAttempts = 0;
         this.lockedUntil = null;
+        revokeAllSessions();
+    }
+
+    /** Company-account-only user: the stored hash is of a random value nobody knows. */
+    public void disablePasswordLogin(String unusableHash) {
+        this.passwordHash = Objects.requireNonNull(unusableHash);
+        this.passwordEnabled = false;
     }
 
     public void activate() {
@@ -108,6 +156,80 @@ public abstract class User extends BaseEntity {
 
     public void deactivate() {
         this.active = false;
+        revokeAllSessions();
+    }
+
+    /** Invalidates every access token issued so far. */
+    public void revokeAllSessions() {
+        this.tokenVersion++;
+    }
+
+    public void unlock() {
+        this.lockedUntil = null;
+        this.failedLoginAttempts = 0;
+    }
+
+    public void updateProfile(String phone, String department, String location) {
+        this.phone = blankToNull(phone);
+        this.department = blankToNull(department);
+        this.location = blankToNull(location);
+    }
+
+    public void completeProfile() {
+        this.profileCompleted = true;
+    }
+
+    public void markProfileIncomplete() {
+        this.profileCompleted = false;
+    }
+
+    public void changeAvatar(String url) {
+        this.avatarUrl = blankToNull(url);
+    }
+
+    /** Links this account to a Google identity. A different Google account can never take it over. */
+    public void linkGoogleAccount(String subject) {
+        Objects.requireNonNull(subject, "subject");
+        if (googleSubject != null && !googleSubject.equals(subject)) {
+            throw new IllegalStateException("This account is already linked to a different Google account");
+        }
+        this.googleSubject = subject;
+    }
+
+    // ---- two-factor authentication ---------------------------------------------------------------
+
+    public void beginMfaEnrolment(String encryptedSecret) {
+        this.mfaPendingSecret = Objects.requireNonNull(encryptedSecret);
+    }
+
+    public void confirmMfaEnrolment(long acceptedStep) {
+        if (mfaPendingSecret == null) {
+            throw new IllegalStateException("Two-factor set-up has not been started");
+        }
+        this.mfaSecret = mfaPendingSecret;
+        this.mfaPendingSecret = null;
+        this.mfaEnabled = true;
+        this.mfaLastUsedStep = acceptedStep;
+    }
+
+    public void disableMfa() {
+        this.mfaSecret = null;
+        this.mfaPendingSecret = null;
+        this.mfaEnabled = false;
+        this.mfaLastUsedStep = null;
+    }
+
+    /** Records a used TOTP step; returns false if it (or a later one) was already used - a replay. */
+    public boolean acceptMfaStep(long step) {
+        if (mfaLastUsedStep != null && step <= mfaLastUsedStep) {
+            return false;
+        }
+        this.mfaLastUsedStep = step;
+        return true;
+    }
+
+    private static String blankToNull(String s) {
+        return s == null || s.isBlank() ? null : s.trim();
     }
 
     public boolean isLocked(Instant now) {
@@ -172,6 +294,47 @@ public abstract class User extends BaseEntity {
 
     public Instant getLastLoginAt() {
         return lastLoginAt;
+    }
+
+    public String getLocation() {
+        return location;
+    }
+
+    public String getAvatarUrl() {
+        return avatarUrl;
+    }
+
+    public boolean isProfileCompleted() {
+        return profileCompleted;
+    }
+
+    public boolean isPasswordEnabled() {
+        return passwordEnabled;
+    }
+
+    public String getGoogleSubject() {
+        return googleSubject;
+    }
+
+    public int getTokenVersion() {
+        return tokenVersion;
+    }
+
+    public String getMfaSecret() {
+        return mfaSecret;
+    }
+
+    public String getMfaPendingSecret() {
+        return mfaPendingSecret;
+    }
+
+    public boolean isMfaEnabled() {
+        return mfaEnabled;
+    }
+
+    /** Admins and managers can change the whole system, so they are the accounts 2FA matters most for. */
+    public boolean isPrivileged() {
+        return getRole() == Role.ADMIN || getRole() == Role.MANAGER;
     }
 
     public String getInitials() {

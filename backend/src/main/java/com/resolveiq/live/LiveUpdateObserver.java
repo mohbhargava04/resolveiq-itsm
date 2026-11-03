@@ -39,5 +39,9 @@ public class LiveUpdateObserver implements IncidentObserver {
         payload.put("at", event.occurredAt().toString());
         hub.broadcastToStaff("incident", payload);
         hub.sendToUser(i.getReporter().getId(), "incident", payload);
+        // major incidents appear as a banner for everyone, so all browsers refresh their status list
+        if (i.isMajor() || event instanceof com.resolveiq.incident.event.MajorIncidentDeclared) {
+            hub.broadcastToAll("major", Map.of("number", i.getNumber(), "event", event.type()));
+        }
     }
 }
