@@ -3,7 +3,7 @@
 #   docker build -t resolveiq .
 
 # ---- 1. frontend: type-check and bundle the React app ------------------------------------
-FROM node:22-alpine AS web
+FROM node:26-alpine AS web
 WORKDIR /web
 COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci --no-audit --no-fund
