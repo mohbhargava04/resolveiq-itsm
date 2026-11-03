@@ -11,7 +11,7 @@ COPY frontend/ ./
 RUN npm run build
 
 # ---- 2. backend: compile with the Maven wrapper, serving the fresh frontend build ---------
-FROM eclipse-temurin:21-jdk AS api
+FROM eclipse-temurin:25-jdk AS api
 WORKDIR /app
 COPY backend/.mvn .mvn
 COPY backend/mvnw backend/pom.xml ./
@@ -23,7 +23,7 @@ RUN ./mvnw -B -q package -DskipTests
 
 # ---- 3. runtime: JRE only, unprivileged user ----------------------------------------------
 # (the host checks /actuator/health; Render does it via healthCheckPath in render.yaml)
-FROM eclipse-temurin:21-jre
+FROM eclipse-temurin:25-jre
 WORKDIR /app
 RUN useradd --system --uid 1001 resolveiq
 COPY --from=api /app/target/resolveiq-backend-*.jar app.jar
