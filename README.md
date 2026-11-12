@@ -5,7 +5,7 @@ CS F213 / MAC F212 Object-Oriented Programming · Semester I, 2026-27 · Group p
 | Member | ID |
 |---|---|
 | Moh Bhargava | 2024B4A70845H |
-| *Team member 2* | *ID number* |
+| Arnav Mhatre | 2025ADPS0135H |
 | *Team member 3* | *ID number* |
 | *Team member 4* | *ID number* |
 
