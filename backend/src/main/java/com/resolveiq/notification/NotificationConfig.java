@@ -1,6 +1,7 @@
 package com.resolveiq.notification;
 
 import com.resolveiq.notification.gateway.ConsoleEmailGateway;
+import com.resolveiq.notification.gateway.DemoSafeEmailGateway;
 import com.resolveiq.notification.gateway.EmailGateway;
 import com.resolveiq.notification.gateway.SimulatedSmsGateway;
 import com.resolveiq.notification.gateway.SmsGateway;
@@ -26,11 +27,14 @@ public class NotificationConfig {
     @Bean
     EmailGateway emailGateway(@Value("${spring.mail.host:}") String smtpHost,
                               @Value("${itsm.notifications.from-address}") String from,
+                              @Value("${itsm.notifications.redirect-demo-mail-to:}") String redirectTo,
                               ObjectProvider<JavaMailSender> mailSender) {
         JavaMailSender sender = mailSender.getIfAvailable();
         if (!smtpHost.isBlank() && sender != null) {
-            log.info("E-mail notifications: SMTP via {}", smtpHost);
-            return new SmtpEmailGateway(sender, from);
+            log.info("E-mail notifications: SMTP via {}{}", smtpHost,
+                    redirectTo.isBlank() ? "" : " (demo-account mail goes to " + redirectTo + ")");
+            // Decorator around the Adapter: real mail, but never to the demo accounts' fake addresses
+            return new DemoSafeEmailGateway(new SmtpEmailGateway(sender, from), redirectTo);
         }
         log.info("E-mail notifications: simulated (set ITSM_SMTP_HOST to send real e-mail)");
         return new ConsoleEmailGateway();

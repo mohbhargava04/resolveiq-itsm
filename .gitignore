@@ -20,3 +20,6 @@ data/
 # old prototype (kept locally only)
 legacy/
 frontend/*.tsbuildinfo
+
+# your own keys for local runs (see backend/local.properties.example)
+local.properties

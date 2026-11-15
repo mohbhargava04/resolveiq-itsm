@@ -1,4 +1,7 @@
 spring:
+  config:
+    # optional, git-ignored file with your own keys (Google, Gmail...): see local.properties.example
+    import: optional:file:./local.properties
   application:
     name: resolveiq
   profiles:
@@ -26,6 +29,9 @@ spring:
     properties:
       mail.smtp.auth: true
       mail.smtp.starttls.enable: true
+      mail.smtp.connectiontimeout: 5000   # a slow mail server must never hold up the app
+      mail.smtp.timeout: 5000
+      mail.smtp.writetimeout: 5000
 
   servlet:
     multipart:
@@ -103,6 +109,8 @@ itsm:
     # Channels switched on at runtime. EMAIL uses SMTP when spring.mail.host is set, otherwise it is simulated.
     enabled-channels: IN_APP,EMAIL,SMS
     from-address: ${ITSM_MAIL_FROM:no-reply@resolveiq.test}
+    # with real SMTP: mail for the demo accounts' fake @resolveiq.test addresses goes to this inbox instead
+    redirect-demo-mail-to: ${ITSM_MAIL_REDIRECT_TO:}
   intelligence:
     duplicate-suspect-threshold: 0.45
     duplicate-block-threshold: 0.85

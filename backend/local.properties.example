@@ -1,0 +1,17 @@
+# Copy this file to "local.properties" (same folder) and fill in your own values.
+# local.properties is git-ignored, so these keys never reach GitHub.
+# Restart the app after changing it. docs/DEPLOYMENT.md explains where each value comes from.
+
+# --- Google sign-in -----------------------------------------------------------------------
+ITSM_GOOGLE_CLIENT_ID=
+ITSM_GOOGLE_CLIENT_SECRET=
+
+# --- Real e-mail through Gmail -------------------------------------------------------------
+ITSM_SMTP_HOST=smtp.gmail.com
+ITSM_SMTP_PORT=587
+ITSM_SMTP_USERNAME=your.address@gmail.com
+# the 16-letter app password (spaces don't matter), NOT your normal Gmail password
+ITSM_SMTP_PASSWORD=
+ITSM_MAIL_FROM=ResolveIQ <your.address@gmail.com>
+# demo accounts have fake @resolveiq.test addresses; their mail comes here instead
+ITSM_MAIL_REDIRECT_TO=your.address@gmail.com
