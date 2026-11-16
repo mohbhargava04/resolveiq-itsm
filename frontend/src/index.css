@@ -17,7 +17,7 @@
   --ink: #15181e;
   --ink-2: #3a414c;
   --muted: #5d6573;
-  --faint: #666d79;   /* 4.5:1+ on every light surface (WCAG AA) */
+  --faint: #626975;   /* 4.5:1+ on every light surface (WCAG AA) */
   --line: #e3e6eb;
   --line-strong: #cfd4db;
 
@@ -28,7 +28,7 @@
   --accent-text: #0c5c60;
 
   --p1: #b8322a;  --p1-soft: #fbe9e7;  --p1-ink: #ffffff;
-  --p2: #945800;  --p2-soft: #fbf0dc;
+  --p2: #945800;  --p2-soft: #fbf0dc;  --p2-ink: #ffffff;
   --p3: #335f9c;  --p3-soft: #e7eef8;
   --p4: #5f6672;  --p4-soft: #eef0f2;
   --ok: #2a7047;  --ok-soft: #e4f2e9;
@@ -62,7 +62,7 @@
   --accent-text: #7fcbc6;
 
   --p1: #f07167;  --p1-soft: #3a2224;  --p1-ink: #1f0a09;
-  --p2: #f2a541;  --p2-soft: #392d1c;
+  --p2: #f2a541;  --p2-soft: #392d1c;  --p2-ink: #241703;
   --p3: #7aa7e6;  --p3-soft: #1f2a3a;
   --p4: #a3abb6;  --p4-soft: #262b32;
   --ok: #6ccb93;  --ok-soft: #1c3226;
@@ -74,6 +74,109 @@
   --avatar-ink-l: 82%;
   --shadow-pop: 0 16px 40px -8px rgb(0 0 0 / 0.55), 0 2px 8px rgb(0 0 0 / 0.3);
   color-scheme: dark;
+}
+
+/* Dim: a soft dark grey for people who find the dark theme too stark. Carries .dark as well. */
+[data-theme="dim"] {
+  --bg: #24272d;
+  --surface: #2b2f36;
+  --surface-2: #323741;
+  --surface-3: #3a404b;
+  --ink: #e1e4e8;
+  --ink-2: #c8ccd3;
+  --muted: #abb2bc;
+  --faint: #a5acb7;
+  --line: #3a4049;
+  --line-strong: #4d5460;
+
+  --accent: #62bab5;
+  --accent-hover: #78c8c3;
+  --accent-ink: #0d1f1f;
+  --accent-soft: #2b4544;
+  --accent-text: #8fd3ce;
+
+  --p1: #f4928a;  --p1-soft: #4a2f31;  --p1-ink: #1f0a09;
+  --p2: #f0aa4f;  --p2-soft: #473a27;  --p2-ink: #241703;
+  --p3: #94b8ec;  --p3-soft: #2c3a4e;
+  --p4: #b4bac4;  --p4-soft: #363b44;
+  --ok: #7fd1a1;  --ok-soft: #2a4335;
+
+  --focus: #78c8c3;
+  --chart-1: #2fb3ac;
+  --chart-2: #ac8ff0;
+  --avatar-l: 32%;
+  --avatar-ink-l: 86%;
+  --shadow-pop: 0 16px 40px -8px rgb(0 0 0 / 0.45), 0 2px 8px rgb(0 0 0 / 0.25);
+  color-scheme: dark;
+}
+
+/* Warm: off-white "paper" for people who find a white screen too bright. */
+[data-theme="warm"] {
+  --bg: #f3eee4;
+  --surface: #fbf7ef;
+  --surface-2: #efe8db;
+  --surface-3: #e6dece;
+  --ink: #2a2520;
+  --ink-2: #453e35;
+  --muted: #5c5448;
+  --faint: #615849;
+  --line: #e0d7c7;
+  --line-strong: #c9bea9;
+
+  --accent: #0e676b;
+  --accent-hover: #0a5659;
+  --accent-ink: #ffffff;
+  --accent-soft: #dcebe4;
+  --accent-text: #0a5558;
+
+  --p1: #a82a22;  --p1-soft: #f6e1d9;  --p1-ink: #ffffff;
+  --p2: #7d4a00;  --p2-soft: #f4e6c8;  --p2-ink: #ffffff;
+  --p3: #2c5590;  --p3-soft: #e0e6ea;
+  --p4: #595449;  --p4-soft: #ebe5d8;
+  --ok: #23633d;  --ok-soft: #dfecd9;
+
+  --focus: #0e676b;
+  --chart-1: #007f79;
+  --chart-2: #7a4bc4;
+  --avatar-l: 86%;
+  --avatar-ink-l: 26%;
+  --shadow-pop: 0 12px 32px -8px rgb(60 45 20 / 0.2), 0 2px 6px rgb(60 45 20 / 0.08);
+  color-scheme: light;
+}
+
+/* High contrast: every text colour reaches WCAG AAA (7:1) on every surface; borders and focus
+   rings are heavier so the edges of controls never depend on a faint line. */
+[data-theme="contrast"] {
+  --bg: #ffffff;
+  --surface: #ffffff;
+  --surface-2: #f3f3f3;
+  --surface-3: #e8e8e8;
+  --ink: #000000;
+  --ink-2: #111111;
+  --muted: #2b2b2b;
+  --faint: #333333;
+  --line: #6b6b6b;
+  --line-strong: #000000;
+
+  --accent: #004a4d;
+  --accent-hover: #003436;
+  --accent-ink: #ffffff;
+  --accent-soft: #dcf1f0;
+  --accent-text: #003b3e;
+
+  --p1: #7d0c06;  --p1-soft: #fde6e3;  --p1-ink: #ffffff;
+  --p2: #5c3600;  --p2-soft: #fbeed5;  --p2-ink: #ffffff;
+  --p3: #12397a;  --p3-soft: #e4edfa;
+  --p4: #2e3238;  --p4-soft: #ededed;
+  --ok: #0b4424;  --ok-soft: #e0f3e7;
+
+  --focus: #000000;
+  --chart-1: #005b56;
+  --chart-2: #5326ab;
+  --avatar-l: 92%;
+  --avatar-ink-l: 15%;
+  --shadow-pop: 0 0 0 2px #000000, 0 12px 32px -8px rgb(0 0 0 / 0.3);
+  color-scheme: light;
 }
 
 @theme inline {
@@ -99,6 +202,7 @@
   --color-p1-ink: var(--p1-ink);
   --color-p2: var(--p2);
   --color-p2-soft: var(--p2-soft);
+  --color-p2-ink: var(--p2-ink);
   --color-p3: var(--p3);
   --color-p3-soft: var(--p3-soft);
   --color-p4: var(--p4);
@@ -116,6 +220,13 @@
 }
 
 @layer base {
+  /* Text size: every font size and spacing unit in the app is in rem, so changing the root font
+     size scales the whole interface in proportion (like browser zoom, but remembered per person). */
+  html { font-size: 100%; }
+  html[data-text-size="small"] { font-size: 87.5%; }
+  html[data-text-size="large"] { font-size: 112.5%; }
+  html[data-text-size="xl"] { font-size: 125%; }
+
   html {
     font-family: var(--font-sans);
     font-feature-settings: "ss01", "cv11";
@@ -196,7 +307,48 @@
   }
 }
 
+/* ------------------------------------------------------------------------------------------------
+   Display & accessibility settings (Profile > Display & accessibility). Set on <html> before first
+   paint by public/theme-init.js and kept in step by src/lib/display.ts.
+   ------------------------------------------------------------------------------------------------ */
+
+/* "Reduce motion" switch: same effect as the device setting above, but chosen in the app. */
+[data-motion="reduce"] *, [data-motion="reduce"] *::before, [data-motion="reduce"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* "Easier reading": more room between lines, letters and words (WCAG 1.4.12 text spacing). */
+[data-reading="easy"] {
+  --text-xs--line-height: 1.7;
+  --text-sm--line-height: 1.7;
+  --text-base--line-height: 1.7;
+  --text-2xs--line-height: 1.6;
+}
+[data-reading="easy"] body {
+  line-height: 1.7;
+  letter-spacing: 0.035em;
+  word-spacing: 0.12em;
+}
+[data-reading="easy"] :is(h1, h2, h3) { letter-spacing: 0.01em; }
+[data-reading="easy"] p + p { margin-top: 0.75em; }
+
+/* "Underline links": text links are recognisable without relying on colour. Text links in this
+   app are the ones that underline on hover; whole-row and navigation links are left alone. */
+[data-links="underline"] :is(a, button)[class*="hover:underline"] {
+  text-decoration-line: underline;
+  text-decoration-thickness: from-font;
+  text-underline-offset: 0.18em;
+}
+
+/* High contrast: heavier focus ring, and controls keep a visible edge. */
+[data-theme="contrast"] :focus-visible { outline-width: 3px; outline-offset: 2px; }
+[data-theme="contrast"] :is(input, textarea, select):focus { outline: 3px solid var(--focus); outline-offset: 1px; }
+[data-theme="contrast"] [role="switch"] { outline: 1px solid var(--line-strong); }
+
 /* Recharts theming */
 .recharts-cartesian-grid line { stroke: var(--line); }
-.recharts-text { fill: var(--muted); font-size: 11px; }
+.recharts-text { fill: var(--muted); font-size: 0.6875rem; }
 .recharts-tooltip-cursor { fill: var(--surface-2); }

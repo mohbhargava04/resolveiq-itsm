@@ -26,12 +26,12 @@ export default function Catalogue() {
           <ul className="divide-y divide-line">
             {services.data?.map((s) => (
               <li key={s.code}>
-                <button onClick={() => setSvc(s)} className={cn('grid w-full grid-cols-[minmax(0,1fr)_110px] gap-4 px-5 py-3 text-left hover:bg-surface-2/60 sm:grid-cols-[minmax(0,1.2fr)_110px_minmax(0,1fr)] cursor-pointer', !s.active && 'opacity-55')}>
+                <button onClick={() => setSvc(s)} className={cn('grid w-full grid-cols-[minmax(0,1fr)_6.875rem] gap-4 px-5 py-3 text-left hover:bg-surface-2/60 sm:grid-cols-[minmax(0,1.2fr)_6.875rem_minmax(0,1fr)] cursor-pointer', !s.active && 'opacity-55')}>
                   <span className="min-w-0">
                     <span className="block font-medium">{s.name}</span>
                     <span className="block truncate text-xs text-muted">{s.ownerTeam}{s.userBase ? `, about ${s.userBase.toLocaleString()} users` : ''}</span>
                   </span>
-                  <span className={cn('self-center text-[13px]', s.criticality === 'CRITICAL' ? 'font-medium text-p1' : s.criticality === 'HIGH' ? 'text-p2' : 'text-ink-2')}>
+                  <span className={cn('self-center text-[0.8125rem]', s.criticality === 'CRITICAL' ? 'font-medium text-p1' : s.criticality === 'HIGH' ? 'text-p2' : 'text-ink-2')}>
                     {LEVEL_LABEL[s.criticality]}
                   </span>
                   <span className="hidden self-center truncate text-xs text-muted sm:block">
@@ -59,8 +59,8 @@ export default function Catalogue() {
                     <span className="text-xs text-muted">{c.code}</span>
                   </span>
                   <span className="flex min-w-0 flex-wrap gap-1">
-                    {c.keywords.slice(0, 10).map((k) => <span key={k} className="rounded bg-surface-2 px-1.5 py-px text-[11px] text-ink-2">{k}</span>)}
-                    {c.keywords.length > 10 && <span className="text-[11px] text-faint">+{c.keywords.length - 10} more</span>}
+                    {c.keywords.slice(0, 10).map((k) => <span key={k} className="rounded bg-surface-2 px-1.5 py-px text-[0.6875rem] text-ink-2">{k}</span>)}
+                    {c.keywords.length > 10 && <span className="text-[0.6875rem] text-faint">+{c.keywords.length - 10} more</span>}
                   </span>
                 </button>
               </li>
@@ -98,7 +98,7 @@ function ServiceDialog({ service, all, onClose }: { service: ServiceView | null;
     <Dialog open onOpenChange={(o) => !o && onClose()} title={service ? service.name : 'Add a service'} width={560}
       footer={<><Button variant="ghost" onClick={onClose}>Cancel</Button><Button variant="primary" loading={save.isPending} onClick={() => save.mutate()}>Save</Button></>}>
       <div className="space-y-4">
-        <div className="grid gap-4 sm:grid-cols-[140px_1fr]">
+        <div className="grid gap-4 sm:grid-cols-[8.75rem_1fr]">
           <Field label="Code"><Input value={f.code} disabled={!!service} onChange={(e) => setF({ ...f, code: e.target.value })} placeholder="HR_PORTAL" /></Field>
           <Field label="Name"><Input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} /></Field>
         </div>
@@ -119,7 +119,7 @@ function ServiceDialog({ service, all, onClose }: { service: ServiceView | null;
           </div>
         </Field>
         {service && (
-          <label className="flex items-center justify-between rounded-lg border border-line px-3 py-2 text-[13px]">
+          <label className="flex items-center justify-between rounded-lg border border-line px-3 py-2 text-[0.8125rem]">
             <span>Active (new incidents can be reported against it)</span>
             <Switch checked={f.active} onChange={(v) => setF({ ...f, active: v })} label="Active" />
           </label>
@@ -151,7 +151,7 @@ function CategoryDialog({ category, onClose }: { category: CategoryView | null; 
     <Dialog open onOpenChange={(o) => !o && onClose()} title={category ? category.name : 'Add a category'} width={520}
       footer={<><Button variant="ghost" onClick={onClose}>Cancel</Button><Button variant="primary" loading={save.isPending} onClick={() => save.mutate()}>Save</Button></>}>
       <div className="space-y-4">
-        <div className="grid gap-4 sm:grid-cols-[140px_1fr]">
+        <div className="grid gap-4 sm:grid-cols-[8.75rem_1fr]">
           <Field label="Code"><Input value={f.code} disabled={!!category} onChange={(e) => setF({ ...f, code: e.target.value })} placeholder="IOT" /></Field>
           <Field label="Name"><Input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} /></Field>
         </div>
@@ -159,12 +159,12 @@ function CategoryDialog({ category, onClose }: { category: CategoryView | null; 
         <Field label="Keywords" hint="Comma-separated words people use when describing this kind of problem">
           <Textarea rows={3} value={f.keywords} onChange={(e) => setF({ ...f, keywords: e.target.value })} placeholder="projector, smart board, sensor" />
         </Field>
-        <label className="flex items-center justify-between rounded-lg border border-line px-3 py-2 text-[13px]">
+        <label className="flex items-center justify-between rounded-lg border border-line px-3 py-2 text-[0.8125rem]">
           <span>Security-sensitive (never prioritised below P2)</span>
           <Switch checked={f.securitySensitive} onChange={(v) => setF({ ...f, securitySensitive: v })} label="Security-sensitive" />
         </label>
         {category && (
-          <label className="flex items-center justify-between rounded-lg border border-line px-3 py-2 text-[13px]">
+          <label className="flex items-center justify-between rounded-lg border border-line px-3 py-2 text-[0.8125rem]">
             <span>Active</span>
             <Switch checked={f.active} onChange={(v) => setF({ ...f, active: v })} label="Active" />
           </label>

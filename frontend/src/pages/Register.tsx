@@ -37,7 +37,7 @@ export default function Register() {
   if (options.data && !options.data.selfRegistration) {
     return (
       <AuthLayout title="Accounts are created by IT" description="Your IT administrator adds people to ResolveIQ. Sign in with your company account once you've been added.">
-        <Link to="/login" className="text-[13px] font-medium text-accent-text hover:underline">Back to sign in</Link>
+        <Link to="/login" className="text-[0.8125rem] font-medium text-accent-text hover:underline">Back to sign in</Link>
       </AuthLayout>
     )
   }
@@ -66,7 +66,7 @@ export default function Register() {
         {error && !Object.keys(fieldErrors).length ? <ErrorNote error={error} /> : null}
         <Button type="submit" variant="primary" className="w-full" loading={busy}>Create account</Button>
       </form>
-      <p className="mt-6 text-[13px] text-muted">
+      <p className="mt-6 text-[0.8125rem] text-muted">
         Already registered? <Link to="/login" className="font-medium text-accent-text hover:underline">Sign in</Link>
       </p>
     </AuthLayout>

@@ -2,7 +2,7 @@ import { useMemo, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { CheckCircle2, Copy, FileText, Lightbulb, Paperclip, Siren, Sparkles, Timer, X } from 'lucide-react'
+import { CheckCircle2, Copy, FileText, Lightbulb, MessagesSquare, Paperclip, Siren, Sparkles, Timer, X } from 'lucide-react'
 import { api, ApiError } from '@/lib/api'
 import { cn, duration, LEVEL_LABEL, PRIORITY_LABEL, STATUS_LABEL } from '@/lib/format'
 import { useDebounced } from '@/lib/useDebounced'
@@ -12,6 +12,7 @@ import type {
 import { Button, Dialog, ErrorNote, Field, Input, PageHeader, Segmented, Select, Skeleton, Textarea } from '@/components/ui'
 import { ACCEPT } from '@/components/incident-collab'
 import { PriorityBadge } from '@/components/incident-bits'
+import { MicButton } from '@/components/MicButton'
 
 const IMPACT_HINT: Record<Level, string> = {
   LOW: 'Just me, or a minor inconvenience',
@@ -130,24 +131,28 @@ export default function ReportIncident() {
 
   return (
     <div>
-      <PageHeader title="Report an incident" description="Describe what's wrong in your own words. ResolveIQ works out the category, priority and deadline as you type." />
+      <PageHeader title="Report an incident" description="Describe what's wrong in your own words. ResolveIQ works out the category, priority and deadline as you type."
+        actions={<Link to="/assistant"><Button size="sm" icon={<MessagesSquare className="size-3.5" />}>Report with assistant</Button></Link>} />
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_21.25rem]">
         <form onSubmit={submit} className="space-y-5 rounded-xl border border-line bg-surface p-5 sm:p-6">
           <Field label="What's the problem?" htmlFor="title" error={fieldErrors.title}>
             <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={160} required
               placeholder="e.g. Fee payment fails at checkout" autoFocus />
           </Field>
 
-          <Field label="Details" htmlFor="desc" hint="What did you try, what did you see, when did it start?" error={fieldErrors.description}>
+          <Field label="Details" htmlFor="desc" hint="What did you try, what did you see, when did it start? You can also dictate with the microphone." error={fieldErrors.description}>
+            <div className="flex items-start gap-2">
             <Textarea id="desc" rows={5} value={description} onChange={(e) => setDescription(e.target.value)} maxLength={4000} required
               onPaste={(e) => { const imgs = [...e.clipboardData.files].filter((f) => f.type.startsWith('image/')); if (imgs.length) { e.preventDefault(); addFiles(imgs.map((f) => new File([f], `screenshot-${Date.now()}.png`, { type: f.type }))) } }}
               placeholder="The payment page spins for about a minute and then shows 'transaction failed'. It started around 10:15." />
+            <MicButton onText={(t) => setDescription((d) => (d ? `${d} ${t}` : t).slice(0, 4000))} />
+            </div>
           </Field>
 
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <label className="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-md border border-line-strong px-2.5 text-[13px] font-medium text-ink-2 hover:bg-surface-2 focus-within:ring-3 focus-within:ring-accent/20">
+              <label className="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-md border border-line-strong px-2.5 text-[0.8125rem] font-medium text-ink-2 hover:bg-surface-2 focus-within:ring-3 focus-within:ring-accent/20">
                 <Paperclip className="size-3.5" aria-hidden /> Attach screenshots or logs
                 <input type="file" multiple accept={ACCEPT} className="sr-only" onChange={(e) => { if (e.target.files) addFiles(e.target.files); e.target.value = '' }} />
               </label>
@@ -189,16 +194,16 @@ export default function ReportIncident() {
             <Segmented name="Urgency" value={urgency} onChange={setUrgency} options={LEVELS.map((l) => ({ value: l, label: LEVEL_LABEL[l], hint: URGENCY_HINT[l] }))} />
           </Field>
 
-          <Field label="How many people are affected?" htmlFor="users" className="max-w-[260px]" error={fieldErrors.affectedUsers}>
+          <Field label="How many people are affected?" htmlFor="users" className="max-w-[16.25rem]" error={fieldErrors.affectedUsers}>
             <Input id="users" type="number" min={1} max={1000000} value={affectedUsers} onChange={(e) => setAffectedUsers(e.target.value)} className="tabular" />
           </Field>
 
           {duplicates && (
             <div className="rounded-lg border border-p2/40 bg-p2-soft p-4">
-              <p className="text-[13.5px] font-medium text-ink">You already have an open incident about this</p>
+              <p className="text-[0.84375rem] font-medium text-ink">You already have an open incident about this</p>
               <ul className="mt-2 space-y-1">
                 {duplicates.map((d) => (
-                  <li key={d.number} className="text-[13px]">
+                  <li key={d.number} className="text-[0.8125rem]">
                     <Link to={`/incidents/${d.number}`} className="font-medium text-accent-text hover:underline">{d.number}</Link>{' '}
                     {d.title} <span className="text-muted">({STATUS_LABEL[d.status as keyof typeof STATUS_LABEL] ?? d.status})</span>
                   </li>
@@ -221,7 +226,7 @@ export default function ReportIncident() {
         <aside aria-label="Suggestions" className="space-y-4 lg:sticky lg:top-20 lg:self-start" aria-live="polite">
           {majorHere && (
             <AssistCard title="Known outage" icon={<Siren className="size-4" />} tone="danger">
-              <p className="text-[13px]"><span className="font-medium">{majorHere.title}</span></p>
+              <p className="text-[0.8125rem]"><span className="font-medium">{majorHere.title}</span></p>
               <p className="mt-1 text-xs text-muted">{majorHere.stageLabel}{majorHere.latestUpdate ? ` — ${majorHere.latestUpdate.message}` : ''}</p>
               {majorHere.affectsMe ? (
                 <p className="mt-3 text-xs font-medium text-muted">You're already receiving its updates.</p>
@@ -233,12 +238,12 @@ export default function ReportIncident() {
 
           {(articles.data?.length ?? 0) > 0 && (
             <AssistCard title="Fix it yourself?" icon={<Lightbulb className="size-4" />}>
-              <p className="mb-2 text-[13px] text-muted">These articles solved similar problems for others.</p>
+              <p className="mb-2 text-[0.8125rem] text-muted">These articles solved similar problems for others.</p>
               <ul className="space-y-1.5">
                 {articles.data!.map((a) => (
                   <li key={a.id}>
                     <button type="button" onClick={() => setArticle(a.id)} className="block w-full rounded-lg border border-line px-3 py-2 text-left hover:bg-surface-2 cursor-pointer">
-                      <span className="block text-[13px] font-medium">{a.title}</span>
+                      <span className="block text-[0.8125rem] font-medium">{a.title}</span>
                       <span className="mt-0.5 block text-xs text-muted">Solved {a.deflections} problem{a.deflections === 1 ? '' : 's'} · {a.helpfulVotes} found it helpful</span>
                     </button>
                   </li>
@@ -249,14 +254,14 @@ export default function ReportIncident() {
 
           <AssistCard title="Priority and deadline" icon={<Timer className="size-4" />}>
             {!serviceCode ? (
-              <p className="text-[13px] text-muted">Choose the affected service to see the priority this incident will get.</p>
+              <p className="text-[0.8125rem] text-muted">Choose the affected service to see the priority this incident will get.</p>
             ) : !preview.data ? <Skeleton className="h-20" /> : (
               <div className={cn('transition-opacity', preview.isFetching && 'opacity-60')}>
                 <div className="flex items-center gap-2">
-                  <PriorityBadge priority={preview.data.assessment.priority} showLabel className="h-7 px-2 text-[13px]" />
+                  <PriorityBadge priority={preview.data.assessment.priority} showLabel className="h-7 px-2 text-[0.8125rem]" />
                   <span className="text-xs text-muted tabular">score {preview.data.assessment.score.toFixed(1)}</span>
                 </div>
-                <dl className="mt-3 grid grid-cols-2 gap-2 text-[13px]">
+                <dl className="mt-3 grid grid-cols-2 gap-2 text-[0.8125rem]">
                   <div className="rounded-lg bg-surface-2 px-3 py-2">
                     <dt className="text-xs text-muted">First response</dt>
                     <dd className="font-semibold tabular">{duration(preview.data.responseMinutes)}</dd>
@@ -277,9 +282,9 @@ export default function ReportIncident() {
 
           <AssistCard title="Category" icon={<Sparkles className="size-4" />}>
             {categoryCode ? (
-              <p className="text-[13px] text-muted">You chose {categories.data?.find((c) => c.code === categoryCode)?.name}.</p>
+              <p className="text-[0.8125rem] text-muted">You chose {categories.data?.find((c) => c.code === categoryCode)?.name}.</p>
             ) : text.length < 12 ? (
-              <p className="text-[13px] text-muted">Start describing the problem and a category will be suggested.</p>
+              <p className="text-[0.8125rem] text-muted">Start describing the problem and a category will be suggested.</p>
             ) : !suggestion.data ? <Skeleton className="h-12" /> : suggestion.data.categoryCode ? (
               <div className={cn('transition-opacity', suggestion.isFetching && 'opacity-60')}>
                 <div className="flex items-baseline justify-between gap-2">
@@ -298,12 +303,12 @@ export default function ReportIncident() {
                   </p>
                 )}
               </div>
-            ) : <p className="text-[13px] text-muted">Not sure yet. Add a few more details, or pick a category.</p>}
+            ) : <p className="text-[0.8125rem] text-muted">Not sure yet. Add a few more details, or pick a category.</p>}
           </AssistCard>
 
           {(similar.data?.length ?? 0) > 0 && (
             <AssistCard title="Already reported?" icon={<Copy className="size-4" />} tone="warn">
-              <p className="mb-2 text-[13px] text-muted">These open incidents look similar. If one matches, follow it instead of reporting again.</p>
+              <p className="mb-2 text-[0.8125rem] text-muted">These open incidents look similar. If one matches, follow it instead of reporting again.</p>
               <ul className="space-y-1.5">
                 {similar.data!.slice(0, 3).map((s) => (
                   <li key={s.number}>
@@ -312,7 +317,7 @@ export default function ReportIncident() {
                         <span className="font-medium tabular text-accent-text">{s.number}</span>
                         <span className="tabular text-muted">{Math.round(s.score * 100)}% similar</span>
                       </span>
-                      <span className="mt-0.5 block truncate text-[13px]">{s.title}</span>
+                      <span className="mt-0.5 block truncate text-[0.8125rem]">{s.title}</span>
                     </Link>
                   </li>
                 ))}
@@ -335,7 +340,7 @@ function ArticlePreview({ id, onClose, onSolved }: { id: number; onClose: () => 
       footer={<><Button variant="ghost" onClick={onClose}>Not quite — continue my report</Button>
         <Button variant="primary" icon={<CheckCircle2 className="size-4" />} loading={solved.isPending} onClick={() => solved.mutate()}>This fixed it</Button></>}>
       {!a.data ? <Skeleton className="h-40" /> : (
-        <div className="space-y-4 text-[13.5px]">
+        <div className="space-y-4 text-[0.84375rem]">
           <div>
             <h3 className="text-xs font-semibold uppercase tracking-wide text-faint">When this happens</h3>
             <p className="mt-1 whitespace-pre-line text-ink-2">{a.data.symptoms}</p>
@@ -353,7 +358,7 @@ function ArticlePreview({ id, onClose, onSolved }: { id: number; onClose: () => 
 function AssistCard({ title, icon, children, tone }: { title: string; icon: React.ReactNode; children: React.ReactNode; tone?: 'warn' | 'danger' }) {
   return (
     <section className={cn('rounded-xl border bg-surface p-4', tone === 'warn' ? 'border-p2/40' : tone === 'danger' ? 'border-p1/40 bg-p1-soft/40' : 'border-line')}>
-      <h2 className="mb-2.5 flex items-center gap-2 text-[13.5px] font-semibold">
+      <h2 className="mb-2.5 flex items-center gap-2 text-[0.84375rem] font-semibold">
         <span className={tone === 'warn' ? 'text-p2' : tone === 'danger' ? 'text-p1' : 'text-accent-text'}>{icon}</span>{title}
       </h2>
       {children}

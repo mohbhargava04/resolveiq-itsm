@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { AlertTriangle, ArrowUpRight, Copy, Pause, Sparkles } from 'lucide-react'
+import { AlertTriangle, ArrowUpRight, Check, Copy, Hourglass, Pause, Sparkles } from 'lucide-react'
 import { cn, duration, PRIORITY_LABEL, remaining, SLA_LABEL, STATUS_LABEL, when } from '@/lib/format'
 import type { EscalationLevel, IncidentStatus, IncidentSummary, Priority, SlaRisk, SlaStatus } from '@/lib/types'
 import { Avatar } from './ui'
@@ -20,7 +20,7 @@ export function PriorityBadge({ priority, showLabel = false, className }: { prio
   return (
     <span
       title={`${priority} ${PRIORITY_LABEL[priority]}`}
-      className={cn('inline-flex h-[22px] items-center gap-1 rounded-md px-1.5 text-xs font-semibold tabular', P_STYLE[priority], className)}
+      className={cn('inline-flex h-[1.375rem] items-center gap-1 rounded-md px-1.5 text-xs font-semibold tabular', P_STYLE[priority], className)}
     >
       {priority}
       {showLabel && <span className="font-medium">{PRIORITY_LABEL[priority]}</span>}
@@ -51,7 +51,7 @@ const STATUS_DOT: Record<IncidentStatus, string> = {
 
 export function StatusBadge({ status, className }: { status: IncidentStatus; className?: string }) {
   return (
-    <span className={cn('inline-flex items-center gap-1.5 text-[13px] text-ink-2 whitespace-nowrap', className)}>
+    <span className={cn('inline-flex items-center gap-1.5 text-[0.8125rem] text-ink-2 whitespace-nowrap', className)}>
       <span className={cn('size-1.5 rounded-full', STATUS_DOT[status])} />
       {STATUS_LABEL[status]}
     </span>
@@ -85,10 +85,14 @@ export function SlaFuse({ status, elapsedPercent, minutesRemaining, compact = fa
   return (
     <div className={cn('min-w-0', className)} title={`SLA ${SLA_LABEL[status].toLowerCase()}`}>
       <div className={cn('flex items-center justify-between gap-2', compact ? 'mb-1' : 'mb-1.5')}>
-        <span className={cn('flex items-center gap-1 tabular whitespace-nowrap', compact ? 'text-xs' : 'text-[13px]')} style={{ color: status === 'ON_TRACK' ? 'var(--ink-2)' : color }}>
-          {status === 'PAUSED' && <Pause className="size-3" />}
-          {status === 'BREACHED' && <AlertTriangle className="size-3" />}
+        <span className={cn('flex items-center gap-1 tabular whitespace-nowrap', compact ? 'text-xs' : 'text-[0.8125rem]')} style={{ color: status === 'ON_TRACK' ? 'var(--ink-2)' : color }}>
+          {/* every non-normal state has its own icon, so the state never depends on colour alone */}
+          {status === 'PAUSED' && <Pause className="size-3" aria-hidden />}
+          {status === 'BREACHED' && <AlertTriangle className="size-3" aria-hidden />}
+          {status === 'AT_RISK' && <Hourglass className="size-3" aria-hidden />}
+          {status === 'MET' && <Check className="size-3" aria-hidden />}
           {label}
+          {(status === 'AT_RISK' || status === 'BREACHED') && <span className="sr-only">, SLA {SLA_LABEL[status].toLowerCase()}</span>}
         </span>
       </div>
       <div className={cn('relative w-full overflow-hidden rounded-full bg-surface-3', compact ? 'h-[3px]' : 'h-1')}>
@@ -131,7 +135,7 @@ export function RiskTag({ risk }: { risk?: SlaRisk }) {
   const text = { MEDIUM: 'Some risk', HIGH: 'High risk', BREACHED: 'Breached', PAUSED: 'Paused' } as const
   const lvl = risk.level as keyof typeof map
   return (
-    <span title={risk.factors.join('\n')} className={cn('inline-flex h-5 shrink-0 items-center whitespace-nowrap rounded px-1.5 text-[11px] font-semibold', map[lvl])}>
+    <span title={risk.factors.join('\n')} className={cn('inline-flex h-5 shrink-0 items-center whitespace-nowrap rounded px-1.5 text-[0.6875rem] font-semibold', map[lvl])}>
       {text[lvl]}
     </span>
   )
@@ -141,7 +145,7 @@ export function EscalationTag({ level }: { level: EscalationLevel }) {
   if (level === 'NONE') return null
   const label = { TEAM_LEAD: 'Escalated to lead', ADMINISTRATOR: 'Escalated to admin', IT_MANAGER: 'Escalated to manager' }[level]
   return (
-    <span className="inline-flex items-center gap-1 text-[11px] font-medium text-p1">
+    <span className="inline-flex items-center gap-1 text-[0.6875rem] font-medium text-p1">
       <ArrowUpRight className="size-3" />
       {label}
     </span>
@@ -169,7 +173,7 @@ export function IncidentList({ items, showReporter = false, showAssignee = true,
           )}
           <Link
             to={`/incidents/${i.number}`}
-            className="group grid min-w-0 flex-1 grid-cols-[auto_1fr_auto] items-center gap-x-4 gap-y-1 px-1 py-3 transition-colors hover:bg-surface-2/60 sm:grid-cols-[auto_minmax(0,1fr)_150px_140px] rounded-md"
+            className="group grid min-w-0 flex-1 grid-cols-[auto_1fr_auto] items-center gap-x-4 gap-y-1 px-1 py-3 transition-colors hover:bg-surface-2/60 sm:grid-cols-[auto_minmax(0,1fr)_9.375rem_8.75rem] rounded-md"
           >
             <PriorityBadge priority={i.priority} className="w-8 justify-center" />
             <div className="min-w-0">
@@ -182,8 +186,8 @@ export function IncidentList({ items, showReporter = false, showAssignee = true,
                   <span title="Categorised by AI" className="text-faint"><Sparkles className="size-3.5" /></span>
                 )}
                 {riskByNumber?.[i.number] && <RiskTag risk={riskByNumber[i.number]} />}
-                {i.major && <span className="shrink-0 rounded bg-p1 px-1.5 py-px text-[10.5px] font-semibold text-p1-ink">Major</span>}
-                {i.majorParent && <span title={`Part of major incident ${i.majorParent}`} className="shrink-0 rounded bg-p1-soft px-1.5 py-px text-[10.5px] font-medium text-p1">{i.majorParent}</span>}
+                {i.major && <span className="shrink-0 rounded bg-p1 px-1.5 py-px text-[0.65625rem] font-semibold text-p1-ink">Major</span>}
+                {i.majorParent && <span title={`Part of major incident ${i.majorParent}`} className="shrink-0 rounded bg-p1-soft px-1.5 py-px text-[0.65625rem] font-medium text-p1">{i.majorParent}</span>}
               </div>
               <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted">
                 <span className="tabular font-medium text-ink-2">{i.number}</span>
@@ -215,8 +219,8 @@ export function MiniStat({ label, value, sub, tone }: { label: string; value: Re
   const color = tone === 'p1' ? 'text-p1' : tone === 'p2' ? 'text-p2' : tone === 'ok' ? 'text-ok' : 'text-ink'
   return (
     <div className="min-w-0 bg-surface px-5 py-4">
-      <div className="text-[13px] text-muted">{label}</div>
-      <div className={cn('mt-1 text-[26px] font-semibold leading-none tabular tracking-tight', color)}>{value}</div>
+      <div className="text-[0.8125rem] text-muted">{label}</div>
+      <div className={cn('mt-1 text-[1.625rem] font-semibold leading-none tabular tracking-tight', color)}>{value}</div>
       {sub && <div className="mt-1.5 text-xs text-muted">{sub}</div>}
     </div>
   )

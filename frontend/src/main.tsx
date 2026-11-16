@@ -6,6 +6,7 @@ import { Toaster } from 'sonner'
 import { ThemeProvider, useTheme } from '@/lib/theme'
 import { AuthProvider } from '@/lib/auth'
 import { ApiError } from '@/lib/api'
+import { DisplayAccountSync } from '@/components/DisplaySettings'
 import App from './App'
 import './index.css'
 
@@ -26,7 +27,7 @@ function ThemedToaster() {
       theme={resolved}
       position="bottom-right"
       closeButton
-      toastOptions={{ style: { fontFamily: 'inherit', fontSize: 13 } }}
+      toastOptions={{ style: { fontFamily: 'inherit', fontSize: '0.8125rem' } }}
     />
   )
 }
@@ -37,6 +38,7 @@ createRoot(document.getElementById('root')!).render(
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
           <AuthProvider>
+            <DisplayAccountSync />
             <App />
             <ThemedToaster />
           </AuthProvider>

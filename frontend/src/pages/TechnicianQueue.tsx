@@ -40,7 +40,7 @@ export default function TechnicianQueue() {
         <MiniStat label="Status" value={<span className="text-lg">{data?.available === false ? 'Off duty' : 'On duty'}</span>} sub="Toggle in the sidebar" />
       </StatStrip>
 
-      <Panel title="Assigned to me" action={<Link to="/incidents?mine=1" className="text-[13px] font-medium text-accent-text hover:underline">Include resolved</Link>}>
+      <Panel title="Assigned to me" action={<Link to="/incidents?mine=1" className="text-[0.8125rem] font-medium text-accent-text hover:underline">Include resolved</Link>}>
         {isLoading ? (
           <div className="space-y-2">{[0, 1, 2].map((i) => <Skeleton key={i} className="h-12" />)}</div>
         ) : (

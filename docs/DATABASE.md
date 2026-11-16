@@ -21,6 +21,8 @@ erDiagram
     INCIDENTS ||--o{ INCIDENT_NOTES : contains
     INCIDENTS |o--o{ INCIDENTS : "duplicate of"
     INCIDENTS ||--o{ AUDIT_RECORDS : "history (by number)"
+    USERS ||--o{ CHAT_SESSIONS : "talks to the assistant"
+    CHAT_SESSIONS ||--o{ CHAT_MESSAGES : "transcript"
 
     USERS {
         bigint id PK
@@ -35,6 +37,30 @@ erDiagram
         boolean available "technicians only"
         varchar experience_level "technicians only"
         bigint team_lead_id FK
+        varchar display_theme "SYSTEM|LIGHT|DARK|DIM|WARM|HIGH_CONTRAST (V3)"
+        varchar display_text_size "SMALL|DEFAULT|LARGE|EXTRA_LARGE (V3)"
+        boolean display_reduce_motion "V3"
+        boolean display_easier_reading "V3"
+        boolean display_underline_links "V3"
+    }
+    CHAT_SESSIONS {
+        bigint id PK
+        bigint user_id FK
+        varchar step "current ConversationStep"
+        varchar outcome "OPEN|INCIDENT_CREATED|DEFLECTED|JOINED_MAJOR_INCIDENT|DUPLICATE_AVOIDED|CANCELLED"
+        varchar draft_title
+        varchar draft_service_code
+        varchar draft_impact
+        varchar draft_urgency
+        varchar incident_number "created, joined or duplicated"
+        bigint deflected_article_id
+    }
+    CHAT_MESSAGES {
+        bigint id PK
+        bigint session_id FK
+        int line_no "unique per session"
+        varchar sender "USER|ASSISTANT"
+        varchar body
     }
     TECHNICIAN_SKILLS {
         bigint technician_id PK, FK
@@ -125,6 +151,8 @@ erDiagram
 ```
 
 ## Design decisions
+
+Migrations: `V1` core schema, `V2` security and collaboration, `V3` display preferences (embedded value object on `users`), `V4` assistant conversations.
 
 | Decision | Reason |
 |---|---|

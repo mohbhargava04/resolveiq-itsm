@@ -71,14 +71,14 @@ export default function CommandCentre() {
                   <li key={i.number} className="flex items-center gap-3 py-2.5">
                     <PriorityBadge priority={i.priority} />
                     <Link to={`/incidents/${i.number}`} className="min-w-0 flex-1">
-                      <span className="block truncate text-[13.5px] font-medium hover:text-accent-text">{i.title}</span>
+                      <span className="block truncate text-[0.84375rem] font-medium hover:text-accent-text">{i.title}</span>
                       <span className="flex gap-2 text-xs text-muted"><span className="tabular">{i.number}</span><span>reported {ago(i.createdAt)}</span></span>
                     </Link>
                     <Button size="sm" variant="primary" icon={<UserPlus className="size-3.5" />} onClick={() => setAssigning(i.number)}>Assign</Button>
                   </li>
                 ))}
               </ul>
-            ) : <p className="py-4 text-[13px] text-muted">Every open incident has an owner.</p>}
+            ) : <p className="py-4 text-[0.8125rem] text-muted">Every open incident has an owner.</p>}
           </Panel>
 
           <Panel title="Open by priority">
@@ -91,9 +91,9 @@ export default function CommandCentre() {
         {isLoading ? <Skeleton className="h-40" /> : (
           <ol className="relative space-y-0">
             {data?.recentActivity?.slice(0, 10).map((a) => (
-              <li key={a.id} className="grid grid-cols-[64px_minmax(0,1fr)] gap-3 py-2">
+              <li key={a.id} className="grid grid-cols-[4rem_minmax(0,1fr)] gap-3 py-2">
                 <span className="pt-0.5 text-xs tabular text-faint">{when(a.occurredAt)}</span>
-                <span className="min-w-0 text-[13px]">
+                <span className="min-w-0 text-[0.8125rem]">
                   <span className="font-medium">{a.actor}</span>{' '}
                   <span className="text-muted">{humanise(a.action).toLowerCase()}</span>{' '}
                   {a.incidentNumber && <Link to={`/incidents/${a.incidentNumber}`} className="font-medium text-accent-text tabular hover:underline">{a.incidentNumber}</Link>}
@@ -116,8 +116,8 @@ function MajorCard({ m }: { m: MajorBanner }) {
       <span className="flex size-8 items-center justify-center rounded-lg bg-p1 text-p1-ink"><Siren className="size-4" /></span>
       <div className="min-w-0 flex-1">
         <p className="text-xs font-semibold uppercase tracking-wide text-p1">Major incident · {m.stageLabel}</p>
-        <Link to={`/incidents/${m.number}`} className="mt-0.5 block text-[15px] font-semibold hover:text-accent-text">{m.title}</Link>
-        <p className="mt-0.5 truncate text-[13px] text-muted">{m.latestUpdate?.message}</p>
+        <Link to={`/incidents/${m.number}`} className="mt-0.5 block text-[0.9375rem] font-semibold hover:text-accent-text">{m.title}</Link>
+        <p className="mt-0.5 truncate text-[0.8125rem] text-muted">{m.latestUpdate?.message}</p>
       </div>
       <div className="text-right text-xs text-muted">
         <div className="text-xl font-semibold tabular text-ink">{m.linkedCount}</div>
@@ -136,12 +136,12 @@ function CorrelationAlert({ cluster }: { cluster: CorrelationCluster }) {
       <div className="flex flex-wrap items-start gap-4 border-l-4 border-p2 px-5 py-4">
         <span className="mt-0.5 flex size-8 items-center justify-center rounded-lg bg-p2-soft text-p2"><GitBranch className="size-4" /></span>
         <div className="min-w-0 flex-1">
-          <h2 className="text-[15px] font-semibold">Probable common cause: {cluster.rootServiceName}</h2>
-          <p className="mt-0.5 max-w-3xl text-[13px] text-muted">
+          <h2 className="text-[0.9375rem] font-semibold">Probable common cause: {cluster.rootServiceName}</h2>
+          <p className="mt-0.5 max-w-3xl text-[0.8125rem] text-muted">
             {cluster.incidentNumbers.length} incidents in the last hour come from services that depend on {cluster.rootServiceName}.
             Fixing it is likely to resolve them together.
           </p>
-          <div className="mt-3 flex flex-wrap items-center gap-2 text-[13px]">
+          <div className="mt-3 flex flex-wrap items-center gap-2 text-[0.8125rem]">
             {dependents.map((s) => (
               <span key={s} className="rounded-md border border-line bg-surface-2 px-2 py-0.5 text-ink-2">{s}</span>
             ))}
@@ -207,12 +207,12 @@ function PriorityMix({ rows }: { rows: { key: string; label: string; total: numb
         const r = open.find((x) => x.key === p)
         const n = r?.open ?? 0
         return (
-          <li key={p} className="grid grid-cols-[34px_1fr_28px] items-center gap-3">
+          <li key={p} className="grid grid-cols-[2.125rem_1fr_1.75rem] items-center gap-3">
             <PriorityBadge priority={p} className="w-8 justify-center" />
             <span className="h-2 overflow-hidden rounded-full bg-surface-2">
               <span className={cn('block h-full rounded-full transition-all')} style={{ width: `${(n / max) * 100}%`, background: priorityColor(p) }} />
             </span>
-            <span className="text-right text-[13px] font-medium tabular">{n}</span>
+            <span className="text-right text-[0.8125rem] font-medium tabular">{n}</span>
           </li>
         )
       })}

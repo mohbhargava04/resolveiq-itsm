@@ -34,7 +34,7 @@ export function BulkBar({ selected, onClear }: { selected: string[]; onClear: ()
     <>
       <div role="region" aria-label="Bulk actions"
         className="sticky bottom-4 z-20 mx-auto mt-4 flex w-fit max-w-full flex-wrap items-center gap-2 rounded-xl border border-line bg-surface px-3 py-2 shadow-pop animate-slide-in">
-        <span className="px-1 text-[13px] font-medium tabular">{selected.length} selected</span>
+        <span className="px-1 text-[0.8125rem] font-medium tabular">{selected.length} selected</span>
         <span className="h-5 w-px bg-line" />
         <Button size="sm" icon={<UserPlus className="size-3.5" />} onClick={() => setAction('ASSIGN')}>Assign</Button>
         <Button size="sm" icon={<Link2 className="size-3.5" />} onClick={() => setAction('LINK_TO_MAJOR')}>Link to major</Button>
@@ -51,7 +51,7 @@ export function BulkBar({ selected, onClear }: { selected: string[]; onClear: ()
           footer={<Button variant="primary" onClick={() => { setResults(null); onClear() }}>Done</Button>}>
           <ul className="space-y-2">
             {results.map((r) => (
-              <li key={r.number} className="flex items-start gap-2 text-[13px]">
+              <li key={r.number} className="flex items-start gap-2 text-[0.8125rem]">
                 {r.ok ? <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-ok" /> : <XCircle className="mt-0.5 size-4 shrink-0 text-p1" />}
                 <Link to={`/incidents/${r.number}`} className="tabular font-medium text-accent-text hover:underline">{r.number}</Link>
                 <span className="text-muted">{r.message}</span>

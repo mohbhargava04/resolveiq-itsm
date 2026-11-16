@@ -13,7 +13,7 @@ export const PROJECT = {
   groupPlaceholder: true,
   team: [
     { name: 'Moh Bhargava', id: '2024B4A70845H' },
-    { name: 'Team member 2', id: 'ID number', placeholder: true },
+    { name: 'Arnav Mhatre', id: '2025ADPS0135H' },
     { name: 'Team member 3', id: 'ID number', placeholder: true },
     { name: 'Team member 4', id: 'ID number', placeholder: true },
   ] as TeamMember[],

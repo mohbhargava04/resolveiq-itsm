@@ -3,6 +3,7 @@ package com.resolveiq.user;
 import com.resolveiq.audit.AuditAction;
 import com.resolveiq.audit.AuditService;
 import com.resolveiq.common.exception.BusinessRuleViolationException;
+import com.resolveiq.user.domain.DisplayPreferences;
 import com.resolveiq.user.domain.Technician;
 import com.resolveiq.user.domain.User;
 import org.springframework.stereotype.Service;
@@ -47,6 +48,13 @@ public class ProfileService {
         }
         audit.recordAdminAction(user, AuditAction.PROFILE_UPDATED, null, null,
                 completingFirstSignIn ? user.getFullName() + " completed their profile" : user.getFullName() + " updated their profile");
+        return users.save(user);
+    }
+
+    /** Saves how the caller wants the interface to look. Not audited: it changes nothing but their own view. */
+    public User updateDisplayPreferences(User caller, DisplayPreferences preferences) {
+        User user = users.findById(caller.getId()).orElseThrow();
+        user.changeDisplayPreferences(preferences);
         return users.save(user);
     }
 }

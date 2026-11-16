@@ -11,6 +11,7 @@ import Welcome from '@/pages/Welcome'
 
 const Home = lazy(() => import('@/pages/Home'))
 const ReportIncident = lazy(() => import('@/pages/ReportIncident'))
+const Assistant = lazy(() => import('@/pages/Assistant'))
 const Incidents = lazy(() => import('@/pages/Incidents'))
 const IncidentDetail = lazy(() => import('@/pages/IncidentDetail'))
 const TechnicianQueue = lazy(() => import('@/pages/TechnicianQueue'))
@@ -62,6 +63,7 @@ export default function App() {
       <Route element={<RequireAuth><AppShell /></RequireAuth>}>
         <Route path="/" element={<S><Home /></S>} />
         <Route path="/report" element={<S><ReportIncident /></S>} />
+        <Route path="/assistant" element={<S><Assistant /></S>} />
         <Route path="/incidents" element={<S><Incidents /></S>} />
         <Route path="/incidents/:number" element={<S><IncidentDetail /></S>} />
         <Route path="/profile" element={<S><Profile /></S>} />
@@ -93,7 +95,7 @@ function NotFound() {
   return (
     <div className="py-24 text-center">
       <p className="text-lg font-semibold">This page doesn't exist</p>
-      <a href="/" className="mt-2 inline-block text-[13px] text-accent-text hover:underline">Go to home</a>
+      <a href="/" className="mt-2 inline-block text-[0.8125rem] text-accent-text hover:underline">Go to home</a>
     </div>
   )
 }

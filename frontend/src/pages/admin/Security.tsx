@@ -45,7 +45,7 @@ export default function Security() {
                 <li key={c.label} className="flex gap-3">
                   {c.on ? <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-ok" /> : <CircleDashed className="mt-0.5 size-4 shrink-0 text-faint" />}
                   <div className="min-w-0">
-                    <p className="text-[13.5px] font-medium">{c.link ? <Link to={c.link} className="hover:text-accent-text">{c.label}</Link> : c.label}</p>
+                    <p className="text-[0.84375rem] font-medium">{c.link ? <Link to={c.link} className="hover:text-accent-text">{c.label}</Link> : c.label}</p>
                     <p className="text-xs text-muted">{c.detail}</p>
                   </div>
                 </li>
@@ -53,14 +53,14 @@ export default function Security() {
             </ul>
           )}
         </Panel>
-        <Panel title="Recent security events" action={<Link to="/admin/audit" className="text-[13px] font-medium text-accent-text hover:underline">Full audit log</Link>}>
+        <Panel title="Recent security events" action={<Link to="/admin/audit" className="text-[0.8125rem] font-medium text-accent-text hover:underline">Full audit log</Link>}>
           {events.isLoading ? <Skeleton className="h-64" /> : recent.length === 0 ? (
-            <p className="flex items-center gap-2 py-6 text-[13px] text-muted"><ShieldCheck className="size-4" /> Nothing to report.</p>
+            <p className="flex items-center gap-2 py-6 text-[0.8125rem] text-muted"><ShieldCheck className="size-4" /> Nothing to report.</p>
           ) : (
             <ol className="divide-y divide-line">
               {recent.map((e) => (
                 <li key={e.id} className="py-2.5">
-                  <p className="flex items-baseline justify-between gap-3 text-[13px]">
+                  <p className="flex items-baseline justify-between gap-3 text-[0.8125rem]">
                     <span className={cn('font-medium', ALERT.has(e.action) && 'text-p1')}>{humanise(e.action)}</span>
                     <span className="shrink-0 text-xs tabular text-faint">{fullDate(e.occurredAt)}</span>
                   </p>

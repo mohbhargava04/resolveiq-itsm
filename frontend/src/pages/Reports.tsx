@@ -60,7 +60,7 @@ export default function Reports() {
                 <Tooltip {...tooltipStyle} labelFormatter={(d) => format(new Date(d as string), 'EEEE d MMMM')} />
                 <Legend iconType="plainline" wrapperStyle={{ fontSize: 12, color: 'var(--muted)' }} />
                 <Line type="monotoneX" dataKey="created" name="Reported" stroke="var(--chart-1)" strokeWidth={2} dot={false} activeDot={{ r: 4, strokeWidth: 2, stroke: 'var(--surface)' }} />
-                <Line type="monotoneX" dataKey="resolved" name="Resolved" stroke="var(--chart-2)" strokeWidth={2} dot={false} activeDot={{ r: 4, strokeWidth: 2, stroke: 'var(--surface)' }} />
+                <Line type="monotoneX" dataKey="resolved" name="Resolved" stroke="var(--chart-2)" strokeWidth={2} strokeDasharray="6 4" dot={false} activeDot={{ r: 4, strokeWidth: 2, stroke: 'var(--surface)' }} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -70,7 +70,7 @@ export default function Reports() {
       <div className="grid gap-6 xl:grid-cols-2">
         <Panel title="SLA performance by priority" description="Targets met versus breached, and average times">
           {!sla.data ? <Skeleton className="h-40" /> : (
-            <table className="w-full text-[13px]">
+            <table className="w-full text-[0.8125rem]">
               <thead>
                 <tr className="text-left text-xs text-muted">
                   <th className="pb-2 font-medium">Priority</th>
@@ -110,7 +110,7 @@ export default function Reports() {
       <Panel title="Technician workload" description="Current load against capacity, with the last 30 days of output">
         {!workload.data ? <Skeleton className="h-60" /> : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[720px] text-[13px]">
+            <table className="w-full min-w-[45rem] text-[0.8125rem]">
               <thead>
                 <tr className="text-left text-xs text-muted">
                   <th className="pb-2 font-medium">Technician</th>
@@ -130,7 +130,7 @@ export default function Reports() {
                         <div>
                           <div className="flex items-center gap-1.5 font-medium">
                             {t.name}
-                            {!t.available && <span className="rounded bg-surface-2 px-1.5 text-[11px] font-normal text-muted">Off duty</span>}
+                            {!t.available && <span className="rounded bg-surface-2 px-1.5 text-[0.6875rem] font-normal text-muted">Off duty</span>}
                           </div>
                           <div className="text-xs text-muted">{ROLE_LABEL[t.role]}, {t.skills.map((s) => s.toLowerCase()).join(', ')}</div>
                         </div>
@@ -160,9 +160,9 @@ export default function Reports() {
 
       <Panel title="Self-help" description="Problems people solved from the knowledge base instead of reporting an incident">
         {!kb.data ? <Skeleton className="h-32" /> : (
-          <div className="grid gap-6 md:grid-cols-[220px_minmax(0,1fr)]">
+          <div className="grid gap-6 md:grid-cols-[13.75rem_minmax(0,1fr)]">
             <dl className="grid grid-cols-3 gap-3 md:grid-cols-1">
-              <div><dt className="text-xs text-muted">Incidents avoided</dt><dd className="text-[26px] font-semibold leading-tight tabular text-ok">{kb.data.deflections}</dd></div>
+              <div><dt className="text-xs text-muted">Incidents avoided</dt><dd className="text-[1.625rem] font-semibold leading-tight tabular text-ok">{kb.data.deflections}</dd></div>
               <div><dt className="text-xs text-muted">Article views</dt><dd className="text-lg font-semibold tabular">{kb.data.views.toLocaleString()}</dd></div>
               <div><dt className="text-xs text-muted">Published articles</dt><dd className="text-lg font-semibold tabular">{kb.data.published}</dd></div>
             </dl>
@@ -171,7 +171,7 @@ export default function Reports() {
                 const max = Math.max(1, ...kb.data!.top.map((t) => t.deflections))
                 return (
                   <li key={a.id}>
-                    <div className="flex items-baseline justify-between gap-3 text-[13px]">
+                    <div className="flex items-baseline justify-between gap-3 text-[0.8125rem]">
                       <Link to={`/kb/${a.id}`} className="min-w-0 truncate font-medium hover:text-accent-text">{a.title}</Link>
                       <span className="shrink-0 tabular text-muted">{a.deflections} solved</span>
                     </div>
@@ -210,7 +210,7 @@ function CountBars({ rows }: { rows: CountRow[] }) {
   return (
     <ul className="space-y-2.5">
       {rows.map((r) => (
-        <li key={r.key} className="grid grid-cols-[minmax(0,150px)_1fr_auto] items-center gap-3 text-[13px]">
+        <li key={r.key} className="grid grid-cols-[minmax(0,9.375rem)_1fr_auto] items-center gap-3 text-[0.8125rem]">
           <span className="truncate text-ink-2" title={r.label}>{r.label}</span>
           <span className="relative h-2 overflow-hidden rounded-full bg-surface-2" title={`${r.total} total, ${r.open} open`}>
             <span className="absolute inset-y-0 left-0 rounded-full bg-chart-1" style={{ width: `${(r.total / max) * 100}%` }} />

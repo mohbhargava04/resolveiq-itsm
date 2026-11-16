@@ -29,7 +29,7 @@ export default function ForgotPassword() {
     return (
       <AuthLayout icon={<MailCheck className="size-5" />} title="Check your e-mail"
         description={<>If <span className="font-medium text-ink-2">{email}</span> has an account, a link to choose a new password is on its way. It works once, for 30 minutes.</>}>
-        <Link to="/login" className="text-[13px] font-medium text-accent-text hover:underline">Back to sign in</Link>
+        <Link to="/login" className="text-[0.8125rem] font-medium text-accent-text hover:underline">Back to sign in</Link>
       </AuthLayout>
     )
   }
@@ -43,7 +43,7 @@ export default function ForgotPassword() {
         {error ? <ErrorNote error={error} /> : null}
         <Button type="submit" variant="primary" className="w-full" loading={busy}>Send reset link</Button>
       </form>
-      <p className="mt-6 text-[13px] text-muted">
+      <p className="mt-6 text-[0.8125rem] text-muted">
         Remembered it? <Link to="/login" className="font-medium text-accent-text hover:underline">Sign in</Link>
       </p>
     </AuthLayout>

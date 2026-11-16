@@ -49,7 +49,7 @@ export function Conversation({ i, canNote, canInternal }: { i: Incident; canNote
 
   return (
     <div>
-      {i.notes.length === 0 && <p className="text-[13px] text-muted">No messages yet.</p>}
+      {i.notes.length === 0 && <p className="text-[0.8125rem] text-muted">No messages yet.</p>}
       <ol className="space-y-3" aria-label="Conversation">
         {i.notes.map((n) => {
           if (n.type === 'SYSTEM') {
@@ -68,13 +68,13 @@ export function Conversation({ i, canNote, canInternal }: { i: Incident; canNote
               <Avatar name={n.author} size={28} className="mt-0.5" />
               <div className={cn('max-w-[85%] min-w-0', mine && 'text-right')}>
                 <div className={cn('flex flex-wrap items-baseline gap-x-2 text-xs text-muted', mine && 'justify-end')}>
-                  <span className="text-[12.5px] font-medium text-ink">{mine ? 'You' : n.author}</span>
+                  <span className="text-[0.78125rem] font-medium text-ink">{mine ? 'You' : n.author}</span>
                   {!fromReporter && !mine && <span>IT</span>}
                   <span>{NOTE_LABEL[n.type]}</span>
                   {n.internal && <span className="inline-flex items-center gap-0.5 font-medium text-p2"><Lock className="size-3" />Internal</span>}
                   <span className="tabular">{when(n.createdAt)}</span>
                 </div>
-                <div className={cn('mt-1 inline-block whitespace-pre-wrap rounded-2xl px-3.5 py-2 text-left text-[13.5px] leading-relaxed',
+                <div className={cn('mt-1 inline-block whitespace-pre-wrap rounded-2xl px-3.5 py-2 text-left text-[0.84375rem] leading-relaxed',
                   n.internal ? 'border border-dashed border-p2/50 bg-p2-soft/60 text-ink'
                     : n.type === 'RESOLUTION' ? 'bg-ok-soft text-ink'
                       : n.type === 'INFO_REQUEST' ? 'border border-p2/40 bg-surface text-ink'
@@ -104,7 +104,7 @@ export function Conversation({ i, canNote, canInternal }: { i: Incident; canNote
           <div className="flex items-center justify-between gap-3 px-1 pt-1">
             <AttachButton number={i.number} />
             <div className="flex items-center gap-2">
-              <span className="hidden text-[11px] text-faint sm:inline">⌘ + Enter to send</span>
+              <span className="hidden text-[0.6875rem] text-faint sm:inline">⌘ + Enter to send</span>
               <Button type="submit" size="sm" variant="primary" icon={<Send className="size-3.5" />} loading={add.isPending} disabled={!text.trim()}>
                 {mode === 'internal' ? 'Add note' : 'Send'}
               </Button>
@@ -141,7 +141,7 @@ function AttachButton({ number }: { number: string }) {
   const upload = useUpload(number)
   return (
     <>
-      <input ref={input} type="file" className="sr-only" accept={ACCEPT} multiple tabIndex={-1}
+      <input ref={input} type="file" className="sr-only" accept={ACCEPT} multiple tabIndex={-1} aria-label="Choose files to attach"
         onChange={(e) => { [...(e.target.files ?? [])].forEach((f) => upload.mutate(f)); e.target.value = '' }} />
       <Button type="button" size="sm" variant="ghost" icon={<Paperclip className="size-3.5" />} loading={upload.isPending}
         onClick={() => input.current?.click()}>Attach</Button>
@@ -172,7 +172,7 @@ export function Attachments({ i, canUpload }: { i: Incident; canUpload: boolean 
   return (
     <section className="rounded-xl border border-line bg-surface p-4" aria-label="Attachments"
       onDragOver={(e) => { if (canUpload) { e.preventDefault(); setDrag(true) } }} onDragLeave={() => setDrag(false)} onDrop={onDrop}>
-      <h2 className="mb-3 flex items-center justify-between text-[13.5px] font-semibold">
+      <h2 className="mb-3 flex items-center justify-between text-[0.84375rem] font-semibold">
         <span>Files {list.length > 0 && <span className="font-normal text-muted">({list.length})</span>}</span>
       </h2>
       {files.isLoading ? <Skeleton className="h-16" /> : (
@@ -182,14 +182,14 @@ export function Attachments({ i, canUpload }: { i: Incident; canUpload: boolean 
       )}
       {canUpload && (
         <>
-          <input ref={input} type="file" className="sr-only" accept={ACCEPT} multiple tabIndex={-1}
+          <input ref={input} type="file" className="sr-only" accept={ACCEPT} multiple tabIndex={-1} aria-label="Choose files to attach"
             onChange={(e) => { [...(e.target.files ?? [])].forEach((f) => upload.mutate(f)); e.target.value = '' }} />
           <button type="button" onClick={() => input.current?.click()}
             className={cn('mt-3 flex w-full flex-col items-center gap-1 rounded-lg border border-dashed px-3 py-4 text-center text-xs text-muted transition-colors cursor-pointer',
               drag ? 'border-accent bg-accent-soft text-accent-text' : 'border-line-strong hover:border-accent hover:text-ink')}>
             <Upload className="size-4" aria-hidden />
             {upload.isPending ? 'Uploading…' : 'Drop files here or click to choose'}
-            <span className="text-[11px] text-faint">Images, PDF, logs or Office files · up to 5 MB · virus-scanned</span>
+            <span className="text-[0.6875rem] text-faint">Images, PDF, logs or Office files · up to 5 MB · virus-scanned</span>
           </button>
         </>
       )}
@@ -217,8 +217,8 @@ function AttachmentRow({ a, onDelete }: { a: AttachmentView; onDelete: () => voi
         <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-surface-2 text-muted"><FileText className="size-4" aria-hidden /></span>
       )}
       <div className="min-w-0 flex-1">
-        <p className="truncate text-[13px] font-medium">{a.fileName}</p>
-        <p className="text-[11px] text-muted">{size} · {a.uploadedBy} · {ago(a.uploadedAt)}</p>
+        <p className="truncate text-[0.8125rem] font-medium">{a.fileName}</p>
+        <p className="text-[0.6875rem] text-muted">{size} · {a.uploadedBy} · {ago(a.uploadedAt)}</p>
       </div>
       <button onClick={() => downloadFile(`/attachments/${a.id}`, a.fileName)} aria-label={`Download ${a.fileName}`} className="rounded-md p-1.5 text-muted hover:bg-surface-2 hover:text-ink cursor-pointer"><Download className="size-4" /></button>
       {a.canDelete && <button onClick={onDelete} aria-label={`Remove ${a.fileName}`} className="rounded-md p-1.5 text-muted hover:bg-p1-soft hover:text-p1 cursor-pointer"><Trash2 className="size-4" /></button>}
@@ -249,7 +249,7 @@ export function MajorPanel({ i, canUpdate, onUpdate }: { i: Incident; canUpdate:
     <section className="overflow-hidden rounded-xl border border-p1/35 bg-surface" aria-label="Major incident">
       <header className="flex flex-wrap items-center gap-3 border-b border-p1/20 bg-p1-soft px-5 py-3">
         <Siren className="size-4 text-p1" aria-hidden />
-        <h2 className="text-[15px] font-semibold text-p1">Major incident</h2>
+        <h2 className="text-[0.9375rem] font-semibold text-p1">Major incident</h2>
         <span className="text-xs text-muted">declared {ago(m.declaredAt)} · {m.linked.length} linked report{m.linked.length === 1 ? '' : 's'}</span>
         {canUpdate && <Button size="sm" className="ml-auto" icon={<Megaphone className="size-3.5" />} onClick={onUpdate}>Post update</Button>}
       </header>
@@ -265,18 +265,18 @@ export function MajorPanel({ i, canUpdate, onUpdate }: { i: Incident; canUpdate:
         <ol className="mt-5 space-y-3 border-l border-line pl-4">
           {m.updates.map((u, idx) => (
             <li key={idx} className="relative">
-              <span className={cn('absolute -left-[21px] top-1.5 size-2.5 rounded-full border-2 border-surface', idx === 0 ? 'bg-p1' : 'bg-line-strong')} />
+              <span className={cn('absolute -left-[1.3125rem] top-1.5 size-2.5 rounded-full border-2 border-surface', idx === 0 ? 'bg-p1' : 'bg-line-strong')} />
               <p className="text-xs text-muted"><span className="font-medium text-ink-2">{u.stageLabel}</span> · {u.author} · {when(u.at)}</p>
-              <p className="mt-0.5 text-[13.5px]">{u.message}</p>
+              <p className="mt-0.5 text-[0.84375rem]">{u.message}</p>
             </li>
           ))}
         </ol>
         {m.linked.length > 0 && (
           <details className="mt-4 border-t border-line pt-3">
-            <summary className="cursor-pointer text-[13px] font-medium text-ink-2">Linked incidents ({m.linked.length})</summary>
+            <summary className="cursor-pointer text-[0.8125rem] font-medium text-ink-2">Linked incidents ({m.linked.length})</summary>
             <ul className="mt-2 space-y-1.5">
               {m.linked.map((l) => (
-                <li key={l.number} className="flex items-center gap-2 text-[13px]">
+                <li key={l.number} className="flex items-center gap-2 text-[0.8125rem]">
                   <Link to={`/incidents/${l.number}`} className="tabular font-medium text-accent-text hover:underline">{l.number}</Link>
                   <span className="min-w-0 flex-1 truncate">{l.title}</span>
                   <span className="text-xs text-muted">{l.reporter.name}</span>
@@ -297,10 +297,10 @@ export function MajorParentNotice({ i }: { i: Incident }) {
     <section className="flex gap-3 rounded-xl border border-p1/30 bg-p1-soft/60 px-5 py-4">
       <Siren className="mt-0.5 size-4 shrink-0 text-p1" aria-hidden />
       <div className="min-w-0">
-        <p className="text-[13.5px] font-medium">
+        <p className="text-[0.84375rem] font-medium">
           Part of a wider problem: <Link to={`/incidents/${p.number}`} className="text-accent-text hover:underline">{p.title}</Link>
         </p>
-        <p className="mt-0.5 text-[13px] text-muted">
+        <p className="mt-0.5 text-[0.8125rem] text-muted">
           {p.stageLabel}{p.latestUpdate ? ` — ${p.latestUpdate.message}` : ''}
         </p>
         <p className="mt-1 text-xs text-muted">You'll get every status update, and this incident is resolved automatically when the main one is fixed.</p>
@@ -327,14 +327,14 @@ export function DeclareMajorDialog({ i, onClose, onDone }: { i: Incident; onClos
           <Textarea id="maj-summary" rows={3} value={summary} onChange={(e) => setSummary(e.target.value)} />
         </Field>
         <div>
-          <p className="mb-2 text-[13px] font-medium text-ink-2">Link related incidents now</p>
+          <p className="mb-2 text-[0.8125rem] font-medium text-ink-2">Link related incidents now</p>
           {similar.isLoading ? <Skeleton className="h-12" /> : candidates.length === 0 ? (
             <p className="text-xs text-muted">No similar open incidents found. You can link more later from each incident.</p>
           ) : (
             <ul className="max-h-48 space-y-1 overflow-y-auto">
               {candidates.map((c) => (
                 <li key={c.number}>
-                  <label className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-[13px] hover:bg-surface-2">
+                  <label className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-[0.8125rem] hover:bg-surface-2">
                     <input type="checkbox" className="accent-[var(--accent)]" checked={picked.includes(c.number)}
                       onChange={(e) => setPicked(e.target.checked ? [...picked, c.number] : picked.filter((x) => x !== c.number))} />
                     <span className="tabular text-muted">{c.number}</span>
@@ -384,7 +384,7 @@ export function LinkMajorDialog({ i, onClose, onDone }: { i: Incident; onClose: 
       description="The reporter will receive the major incident's updates, and this incident is resolved when it is."
       footer={<><Button variant="ghost" onClick={onClose}>Cancel</Button><Button variant="primary" icon={<Link2 className="size-4" />} loading={link.isPending} disabled={!choice} onClick={() => link.mutate()}>Link</Button></>}>
       {majors.isLoading ? <Skeleton className="h-16" /> : list.length === 0 ? (
-        <p className="text-[13px] text-muted">There are no open major incidents. A team lead can declare one from the incident at the centre of an outage.</p>
+        <p className="text-[0.8125rem] text-muted">There are no open major incidents. A team lead can declare one from the incident at the centre of an outage.</p>
       ) : (
         <ul className="space-y-1.5" role="radiogroup" aria-label="Major incident">
           {list.map((m) => (
@@ -392,7 +392,7 @@ export function LinkMajorDialog({ i, onClose, onDone }: { i: Incident; onClose: 
               <label className={cn('flex cursor-pointer items-start gap-3 rounded-lg border px-3 py-2.5', choice === m.number ? 'border-accent bg-accent-soft/40' : 'border-line hover:bg-surface-2')}>
                 <input type="radio" name="major" className="mt-1 accent-[var(--accent)]" checked={choice === m.number} onChange={() => setChoice(m.number)} />
                 <span className="min-w-0">
-                  <span className="block text-[13.5px] font-medium">{m.title}</span>
+                  <span className="block text-[0.84375rem] font-medium">{m.title}</span>
                   <span className="block text-xs text-muted">{m.number} · {m.service.name} · {m.stageLabel} · {m.linkedCount} linked</span>
                 </span>
               </label>

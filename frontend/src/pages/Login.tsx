@@ -75,10 +75,10 @@ export default function Login() {
         <div className="relative flex h-full flex-col px-6 py-8 sm:px-12 lg:py-10">
           <div className="hidden lg:block"><Logo /></div>
 
-          <div className="mx-auto flex w-full max-w-[460px] flex-1 flex-col justify-center gap-9 py-6 lg:py-12">
+          <div className="mx-auto flex w-full max-w-[28.75rem] flex-1 flex-col justify-center gap-9 py-6 lg:py-12">
             <div className="hidden lg:block">
-              <p className="text-[13px] font-medium text-accent-text">{PROJECT.tagline}</p>
-              <h2 className="mt-2 text-[30px] font-semibold leading-[1.12] tracking-tight text-balance">
+              <p className="text-[0.8125rem] font-medium text-accent-text">{PROJECT.tagline}</p>
+              <h2 className="mt-2 text-[1.875rem] font-semibold leading-[1.12] tracking-tight text-balance">
                 Every incident, from the first report to a confirmed fix.
               </h2>
             </div>
@@ -106,7 +106,7 @@ export default function Login() {
           <ThemeMenu />
         </div>
 
-        <div className="mx-auto flex w-full max-w-[360px] flex-1 flex-col justify-center py-12">
+        <div className="mx-auto flex w-full max-w-[22.5rem] flex-1 flex-col justify-center py-12">
           {mfa ? (
             <MfaStep
               challenge={mfa.challenge}
@@ -118,7 +118,7 @@ export default function Login() {
             />
           ) : (
             <>
-              <h1 className="text-[28px] font-semibold leading-tight tracking-tight">Sign in</h1>
+              <h1 className="text-[1.75rem] font-semibold leading-tight tracking-tight">Sign in</h1>
               <p className="mt-2 text-sm text-muted">
                 {domains.length === 1
                   ? <>Use your <span className="font-medium text-ink-2">@{domains[0]}</span> company account.</>
@@ -165,7 +165,7 @@ export default function Login() {
                 </Field>
                 <div className="flex flex-col gap-1.5">
                   <div className="flex items-baseline justify-between">
-                    <label htmlFor="password" className="text-[13px] font-medium text-ink-2">Password</label>
+                    <label htmlFor="password" className="text-[0.8125rem] font-medium text-ink-2">Password</label>
                     <Link to="/forgot-password" className="text-xs font-medium text-accent-text hover:underline">Forgot password?</Link>
                   </div>
                   <Input id="password" type="password" autoComplete="current-password" required value={password}
@@ -176,7 +176,7 @@ export default function Login() {
               </form>
 
               {options.data?.selfRegistration && (
-                <p className="mt-6 text-[13px] text-muted">
+                <p className="mt-6 text-[0.8125rem] text-muted">
                   New employee? <Link to="/register" className="font-medium text-accent-text hover:underline">Create an account</Link>
                 </p>
               )}
@@ -233,11 +233,11 @@ function MfaStep({ challenge, onVerify, onBack }: { challenge?: string; onVerify
 
   return (
     <div>
-      <button onClick={onBack} className="mb-8 inline-flex items-center gap-1.5 text-[13px] text-muted hover:text-ink cursor-pointer">
+      <button onClick={onBack} className="mb-8 inline-flex items-center gap-1.5 text-[0.8125rem] text-muted hover:text-ink cursor-pointer">
         <ArrowLeft className="size-4" /> Back
       </button>
       <span className="inline-flex size-10 items-center justify-center rounded-full bg-accent-soft text-accent-text"><ShieldCheck className="size-5" /></span>
-      <h1 className="mt-4 text-[26px] font-semibold leading-tight tracking-tight">Two-step verification</h1>
+      <h1 className="mt-4 text-[1.625rem] font-semibold leading-tight tracking-tight">Two-step verification</h1>
       <p className="mt-2 text-sm text-muted">
         {recovery ? 'Enter one of the recovery codes you saved when you set up two-step verification.'
           : 'Enter the 6-digit code from your authenticator app.'}
@@ -260,7 +260,7 @@ function MfaStep({ challenge, onVerify, onBack }: { challenge?: string; onVerify
         <Button type="submit" variant="primary" className="w-full" loading={busy} disabled={!recovery && code.length !== 6}>Verify</Button>
       </form>
       <button onClick={() => { setRecovery(!recovery); setCode(''); setError(null) }}
-        className="mt-5 inline-flex items-center gap-1.5 text-[13px] font-medium text-accent-text hover:underline cursor-pointer">
+        className="mt-5 inline-flex items-center gap-1.5 text-[0.8125rem] font-medium text-accent-text hover:underline cursor-pointer">
         <KeyRound className="size-3.5" /> {recovery ? 'Use the authenticator app instead' : 'Use a recovery code instead'}
       </button>
       {!challenge && <p className="sr-only">Continuing a company-account sign-in.</p>}
@@ -281,15 +281,15 @@ function FuseIllustration() {
   ] as const
   return (
     <figure className="rounded-xl border border-line bg-bg/70 p-4 shadow-[0_1px_0_rgb(0_0_0/0.02)] backdrop-blur-sm" aria-label="Illustration: incidents with their SLA fuses">
-      <div className="mb-3 flex items-center justify-between text-[11px] font-medium text-faint">
+      <div className="mb-3 flex items-center justify-between text-[0.6875rem] font-medium text-faint">
         <span>Live queue</span>
         <span className="inline-flex items-center gap-1.5"><span className="size-1.5 animate-pulse rounded-full bg-ok" /> SLA monitor</span>
       </div>
       <ul className="space-y-3.5">
         {rows.map((r, i) => (
           <li key={r.id}>
-            <div className="flex items-center gap-2 text-[12.5px]">
-              <span className={cn('rounded px-1.5 py-px text-[10.5px] font-semibold',
+            <div className="flex items-center gap-2 text-[0.78125rem]">
+              <span className={cn('rounded px-1.5 py-px text-[0.65625rem] font-semibold',
                 r.tone === 'p1' ? 'bg-p1 text-p1-ink' : r.tone === 'p2' ? 'bg-p2-soft text-p2' : 'bg-p4-soft text-p4')}>{r.p}</span>
               <span className="tabular text-faint">{r.id}</span>
               <span className="truncate text-ink-2">{r.title}</span>
@@ -303,8 +303,8 @@ function FuseIllustration() {
           </li>
         ))}
         <li>
-          <div className="flex items-center gap-2 text-[12.5px]">
-            <span className="rounded bg-ok-soft px-1.5 py-px text-[10.5px] font-semibold text-ok">Met</span>
+          <div className="flex items-center gap-2 text-[0.78125rem]">
+            <span className="rounded bg-ok-soft px-1.5 py-px text-[0.65625rem] font-semibold text-ok">Met</span>
             <span className="tabular text-faint">INC-1029</span>
             <span className="truncate text-ink-2">VPN drops when working from home</span>
           </div>
@@ -320,14 +320,14 @@ function ProjectBlock() {
     <section aria-label="About this project">
       <div className="h-px bg-line" />
       <div className="mt-6 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <p className="text-[13px] font-medium text-ink-2">{PROJECT.course}</p>
-        <p className={cn('text-[13px]', PROJECT.groupPlaceholder ? 'italic text-faint' : 'font-medium text-ink-2')}>{PROJECT.group}</p>
+        <p className="text-[0.8125rem] font-medium text-ink-2">{PROJECT.course}</p>
+        <p className={cn('text-[0.8125rem]', PROJECT.groupPlaceholder ? 'italic text-faint' : 'font-medium text-ink-2')}>{PROJECT.group}</p>
       </div>
       <p className="mt-0.5 text-xs text-muted">Group project · {PROJECT.term}</p>
       <ul className="mt-4 grid grid-cols-2 gap-x-6 gap-y-2.5">
         {PROJECT.team.map((m) => (
           <li key={m.name + m.id} className="min-w-0">
-            <span className={cn('block truncate text-[13px]', m.placeholder ? 'italic text-faint' : 'font-medium text-ink')}>{m.name}</span>
+            <span className={cn('block truncate text-[0.8125rem]', m.placeholder ? 'italic text-faint' : 'font-medium text-ink')}>{m.name}</span>
             <span className={cn('block truncate text-xs tabular', m.placeholder ? 'italic text-faint' : 'text-muted')}>{m.id}</span>
           </li>
         ))}
@@ -356,7 +356,7 @@ function DemoAccounts({ accounts, password, busy, onPick }: {
         className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left cursor-pointer"
       >
         <span>
-          <span className="block text-[13.5px] font-semibold">Try a demo account</span>
+          <span className="block text-[0.84375rem] font-semibold">Try a demo account</span>
           <span className="block text-xs text-muted">One click signs you in at that access level.</span>
         </span>
         <ChevronDown className={cn('size-4 shrink-0 text-muted transition-transform', open && 'rotate-180')} aria-hidden />
@@ -375,7 +375,7 @@ function DemoAccounts({ accounts, password, busy, onPick }: {
                   <RoleDot role={a.role} />
                   <span className="min-w-0 flex-1">
                     <span className="flex items-baseline gap-2">
-                      <span className="text-[13px] font-medium">{ROLE_LABEL[a.role]}</span>
+                      <span className="text-[0.8125rem] font-medium">{ROLE_LABEL[a.role]}</span>
                       <span className="truncate text-xs text-faint">{a.email}</span>
                     </span>
                     <span className="mt-px block truncate text-xs text-muted">{a.lands}</span>

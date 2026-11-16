@@ -58,14 +58,14 @@ export function AssignDialog({ number, open, onOpenChange }: { number: string; o
       }
     >
       <div className="mb-3 flex items-center gap-2">
-        <span className="whitespace-nowrap text-[13px] text-muted">Rank using</span>
-        <Select value={strategy} onChange={(e) => { setStrategy(e.target.value); setChosen(null) }} className="h-8 w-56 text-[13px]">
+        <span className="whitespace-nowrap text-[0.8125rem] text-muted">Rank using</span>
+        <Select value={strategy} onChange={(e) => { setStrategy(e.target.value); setChosen(null) }} className="h-8 w-56 text-[0.8125rem]">
           {STRATEGIES.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
         </Select>
       </div>
       {recs.isLoading && <div className="space-y-2">{[0, 1, 2].map((i) => <Skeleton key={i} className="h-16" />)}</div>}
       {recs.data?.length === 0 && (
-        <p className="rounded-lg bg-surface-2 p-4 text-[13px] text-muted">No technician is eligible with this strategy. Everyone may be off duty or at capacity; try load-based ranking.</p>
+        <p className="rounded-lg bg-surface-2 p-4 text-[0.8125rem] text-muted">No technician is eligible with this strategy. Everyone may be off duty or at capacity; try load-based ranking.</p>
       )}
       <ul className="space-y-1.5" role="radiogroup" aria-label="Technicians">
         {recs.data?.map((r, idx) => {
@@ -84,13 +84,13 @@ export function AssignDialog({ number, open, onOpenChange }: { number: string; o
                 <Avatar name={r.technician.name} size={30} />
                 <span className="min-w-0 flex-1">
                   <span className="flex items-center gap-2">
-                    <span className="text-[13.5px] font-medium">{r.technician.name}</span>
-                    {idx === 0 && <span className="rounded bg-accent px-1.5 py-px text-[10px] font-semibold text-accent-ink">Best match</span>}
+                    <span className="text-[0.84375rem] font-medium">{r.technician.name}</span>
+                    {idx === 0 && <span className="rounded bg-accent px-1.5 py-px text-[0.625rem] font-semibold text-accent-ink">Best match</span>}
                     <span className="ml-auto text-xs tabular text-muted">{r.activeIncidents}/{r.capacity} active</span>
                   </span>
                   <span className="mt-1 flex flex-wrap gap-1">
                     {r.reasons.map((reason) => (
-                      <span key={reason} className="rounded bg-surface-2 px-1.5 py-0.5 text-[11px] text-ink-2">{reason}</span>
+                      <span key={reason} className="rounded bg-surface-2 px-1.5 py-0.5 text-[0.6875rem] text-ink-2">{reason}</span>
                     ))}
                   </span>
                 </span>

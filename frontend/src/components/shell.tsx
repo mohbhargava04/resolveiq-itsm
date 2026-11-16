@@ -5,16 +5,18 @@ import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import * as Popover from '@radix-ui/react-popover'
 import { Command } from 'cmdk'
 import {
-  Activity, Bell, BookOpen, ClipboardList, Gauge, LayoutDashboard, Library, ListChecks, LogOut, Menu, Monitor, Moon,
-  Network, PlusCircle, ScrollText, Search, Send, Settings2, ShieldCheck, Siren, Sun, Timer, UserRound, Users, X,
+  Accessibility, Activity, Bell, BookOpen, Check, ClipboardList, Gauge, LayoutDashboard, Library, ListChecks, LogOut, Menu, MessagesSquare,
+  Network, PlusCircle, ScrollText, Search, Send, Settings2, ShieldCheck, Siren, Timer, UserRound, Users, X,
 } from 'lucide-react'
 import { api, qs } from '@/lib/api'
 import { useAuth, useUser } from '@/lib/auth'
-import { useTheme, type ThemePreference } from '@/lib/theme'
+import { useDisplay } from '@/lib/theme'
+import { THEMES, type ThemeChoice } from '@/lib/display'
+import { DisplaySettings, THEME_ICON } from './DisplaySettings'
 import { useLiveUpdates } from '@/lib/live'
 import { ago, cn, ROLE_LABEL } from '@/lib/format'
 import type { IncidentSummary, MajorBanner, NotificationView, Page } from '@/lib/types'
-import { Avatar, IconButton, Kbd, Switch } from './ui'
+import { Avatar, Dialog, IconButton, Kbd, Switch } from './ui'
 import { PriorityBadge } from './incident-bits'
 
 interface NavItem { to: string; label: string; icon: ReactNode; end?: boolean }
@@ -29,6 +31,7 @@ function useNavigation(): { label?: string; items: NavItem[] }[] {
       items: [
         { to: '/', label: 'Home', icon: <LayoutDashboard className={ic} />, end: true },
         { to: '/report', label: 'Report an incident', icon: <PlusCircle className={ic} /> },
+        { to: '/assistant', label: 'Report with assistant', icon: <MessagesSquare className={ic} /> },
         { to: '/incidents', label: 'My incidents', icon: <ClipboardList className={ic} /> },
         { to: '/kb', label: 'Knowledge base', icon: <Library className={ic} /> },
       ],
@@ -48,6 +51,7 @@ function useNavigation(): { label?: string; items: NavItem[] }[] {
   work.push({ to: '/services', label: 'Service map', icon: <Network className={ic} /> })
   work.push({ to: '/kb', label: 'Knowledge base', icon: <Library className={ic} /> })
   work.push({ to: '/report', label: 'Report an incident', icon: <PlusCircle className={ic} /> })
+  work.push({ to: '/assistant', label: 'Report with assistant', icon: <MessagesSquare className={ic} /> })
 
   const groups: { label?: string; items: NavItem[] }[] = [{ items: work }]
   if (is('TEAM_LEAD')) {
@@ -78,7 +82,7 @@ export function Logo({ className }: { className?: string }) {
         <path d="M9 22V10h7.5a4.5 4.5 0 0 1 0 9H13l6 3" fill="none" stroke="var(--accent-ink)" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
         <circle cx="23.5" cy="10.5" r="2" fill="var(--p1)" />
       </svg>
-      <span className="text-[15px] font-semibold tracking-tight">ResolveIQ</span>
+      <span className="text-[0.9375rem] font-semibold tracking-tight">ResolveIQ</span>
     </span>
   )
 }
@@ -102,7 +106,7 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
                     end={item.end}
                     onClick={onNavigate}
                     className={({ isActive }) => cn(
-                      'flex h-8 items-center gap-2.5 rounded-md px-2.5 text-[13.5px] transition-colors',
+                      'flex h-8 items-center gap-2.5 rounded-md px-2.5 text-[0.84375rem] transition-colors',
                       isActive ? 'bg-surface-3 font-medium text-ink' : 'text-ink-2 hover:bg-surface-2 hover:text-ink',
                     )}
                   >
@@ -137,7 +141,7 @@ function AvailabilityFooter() {
   return (
     <div className="m-2.5 flex items-center justify-between gap-2 rounded-lg border border-line bg-surface px-3 py-2.5">
       <div className="min-w-0">
-        <div className="flex items-center gap-1.5 text-[13px] font-medium">
+        <div className="flex items-center gap-1.5 text-[0.8125rem] font-medium">
           <span className={cn('size-1.5 rounded-full', on ? 'bg-ok' : 'bg-faint')} />
           {on ? 'On duty' : 'Off duty'}
         </div>
@@ -149,34 +153,42 @@ function AvailabilityFooter() {
 }
 
 export function ThemeMenu() {
-  const { preference, resolved, setPreference } = useTheme()
-  const options: { value: ThemePreference; label: string; icon: ReactNode }[] = [
-    { value: 'light', label: 'Light', icon: <Sun className="size-4" /> },
-    { value: 'dark', label: 'Dark', icon: <Moon className="size-4" /> },
-    { value: 'system', label: 'Match system', icon: <Monitor className="size-4" /> },
-  ]
+  const { display, setTheme } = useDisplay()
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const Current = THEME_ICON[display.theme]
+  const item = 'flex h-8 cursor-pointer items-center gap-2 rounded-md px-2 text-[0.8125rem] text-ink-2 outline-none data-[highlighted]:bg-surface-2'
   return (
-    <DropdownMenu.Root>
-      <DropdownMenu.Trigger asChild>
-        <IconButton label="Change theme">{resolved === 'dark' ? <Moon className="size-4" /> : <Sun className="size-4" />}</IconButton>
-      </DropdownMenu.Trigger>
-      <DropdownMenu.Portal>
-        <DropdownMenu.Content align="end" sideOffset={6} className="z-50 min-w-40 rounded-lg border border-line bg-surface p-1 shadow-pop animate-slide-in">
-          <DropdownMenu.RadioGroup value={preference} onValueChange={(v) => setPreference(v as ThemePreference)}>
-            {options.map((o) => (
-              <DropdownMenu.RadioItem
-                key={o.value}
-                value={o.value}
-                className="flex h-8 cursor-pointer items-center gap-2 rounded-md px-2 text-[13px] text-ink-2 outline-none data-[highlighted]:bg-surface-2 data-[state=checked]:text-ink data-[state=checked]:font-medium"
-              >
-                {o.icon}{o.label}
-                <DropdownMenu.ItemIndicator className="ml-auto size-1.5 rounded-full bg-accent" />
-              </DropdownMenu.RadioItem>
-            ))}
-          </DropdownMenu.RadioGroup>
-        </DropdownMenu.Content>
-      </DropdownMenu.Portal>
-    </DropdownMenu.Root>
+    <>
+      <DropdownMenu.Root>
+        <DropdownMenu.Trigger asChild>
+          <IconButton label="Theme and display settings"><Current className="size-4" /></IconButton>
+        </DropdownMenu.Trigger>
+        <DropdownMenu.Portal>
+          <DropdownMenu.Content align="end" sideOffset={6} className="z-50 min-w-48 rounded-lg border border-line bg-surface p-1 shadow-pop animate-slide-in">
+            <DropdownMenu.RadioGroup value={display.theme} onValueChange={(v) => setTheme(v as ThemeChoice)}>
+              {THEMES.map((o) => {
+                const Icon = THEME_ICON[o.value]
+                return (
+                  <DropdownMenu.RadioItem key={o.value} value={o.value}
+                    className={cn(item, 'data-[state=checked]:font-medium data-[state=checked]:text-ink')}>
+                    <Icon className="size-4" />{o.label}
+                    <DropdownMenu.ItemIndicator className="ml-auto"><Check className="size-3.5 text-accent-text" /></DropdownMenu.ItemIndicator>
+                  </DropdownMenu.RadioItem>
+                )
+              })}
+            </DropdownMenu.RadioGroup>
+            <DropdownMenu.Separator className="my-1 h-px bg-line" />
+            <DropdownMenu.Item onSelect={() => setSettingsOpen(true)} className={item}>
+              <Accessibility className="size-4" /> Display &amp; accessibility…
+            </DropdownMenu.Item>
+          </DropdownMenu.Content>
+        </DropdownMenu.Portal>
+      </DropdownMenu.Root>
+      <Dialog open={settingsOpen} onOpenChange={setSettingsOpen} title="Display & accessibility" width={620}
+        description="Theme, text size and reading aids. Changes apply straight away.">
+        <DisplaySettings />
+      </Dialog>
+    </>
   )
 }
 
@@ -210,7 +222,7 @@ function NotificationsMenu() {
         <IconButton label={count ? `Notifications, ${count} unread` : 'Notifications'} className="relative">
           <Bell className="size-4" />
           {count > 0 && (
-            <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-p1 px-1 text-[10px] font-semibold text-p1-ink tabular">
+            <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-p1 px-1 text-[0.625rem] font-semibold text-p1-ink tabular">
               {count > 99 ? '99+' : count}
             </span>
           )}
@@ -221,13 +233,13 @@ function NotificationsMenu() {
           <div className="flex items-center justify-between border-b border-line px-4 py-3">
             <span className="text-sm font-semibold">Notifications</span>
             {count > 0 && (
-              <button onClick={() => readAll.mutate()} className="text-[13px] text-accent-text hover:underline cursor-pointer">Mark all as read</button>
+              <button onClick={() => readAll.mutate()} className="text-[0.8125rem] text-accent-text hover:underline cursor-pointer">Mark all as read</button>
             )}
           </div>
-          <div className="max-h-[420px] overflow-y-auto">
-            {list.isLoading && <div className="p-6 text-center text-[13px] text-muted">Loading…</div>}
+          <div className="max-h-[26.25rem] overflow-y-auto">
+            {list.isLoading && <div className="p-6 text-center text-[0.8125rem] text-muted">Loading…</div>}
             {list.data && list.data.items.length === 0 && (
-              <div className="p-8 text-center text-[13px] text-muted">You're all caught up.</div>
+              <div className="p-8 text-center text-[0.8125rem] text-muted">You're all caught up.</div>
             )}
             <ul className="divide-y divide-line">
               {list.data?.items.map((n) => (
@@ -241,9 +253,9 @@ function NotificationsMenu() {
                   >
                     <span className={cn('mt-1.5 size-1.5 shrink-0 rounded-full', n.read ? 'bg-transparent' : n.urgent ? 'bg-p1' : 'bg-accent')} />
                     <span className="min-w-0">
-                      <span className={cn('block text-[13px]', n.read ? 'text-ink-2' : 'font-medium text-ink')}>{n.subject}</span>
+                      <span className={cn('block text-[0.8125rem]', n.read ? 'text-ink-2' : 'font-medium text-ink')}>{n.subject}</span>
                       <span className="mt-0.5 line-clamp-2 block text-xs text-muted">{n.message}</span>
-                      <span className="mt-1 block text-[11px] text-faint">{ago(n.createdAt)}</span>
+                      <span className="mt-1 block text-[0.6875rem] text-faint">{ago(n.createdAt)}</span>
                     </span>
                   </button>
                 </li>
@@ -263,30 +275,33 @@ function UserMenu() {
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger asChild>
-        <button className="flex items-center gap-2 rounded-lg py-1 pl-1 pr-2 hover:bg-surface-2 cursor-pointer" aria-label="Account menu">
+        <button className="flex items-center gap-2 rounded-lg py-1 pl-1 pr-2 hover:bg-surface-2 cursor-pointer">
+          {/* named by its own text (no aria-label), so the spoken name always matches what is shown */}
           <Avatar name={user.fullName} src={user.avatarUrl} size={28} />
+          <span className="sr-only md:hidden">{user.fullName} </span>
           <span className="hidden text-left leading-tight md:block">
-            <span className="block text-[13px] font-medium">{user.fullName}</span>
-            <span className="block text-[11px] text-muted">{ROLE_LABEL[user.role]}</span>
+            <span className="block text-[0.8125rem] font-medium">{user.fullName}</span>{' '}
+            <span className="block text-[0.6875rem] text-muted">{ROLE_LABEL[user.role]}</span>
           </span>
+          <span className="sr-only">, account menu</span>
         </button>
       </DropdownMenu.Trigger>
       <DropdownMenu.Portal>
         <DropdownMenu.Content align="end" sideOffset={6} className="z-50 min-w-56 rounded-lg border border-line bg-surface p-1 shadow-pop animate-slide-in">
           <div className="px-2.5 py-2">
-            <div className="text-[13px] font-medium">{user.fullName}</div>
+            <div className="text-[0.8125rem] font-medium">{user.fullName}</div>
             <div className="text-xs text-muted">{user.email}</div>
           </div>
           <DropdownMenu.Separator className="my-1 h-px bg-line" />
           <DropdownMenu.Item
             onSelect={() => navigate('/profile')}
-            className="flex h-8 cursor-pointer items-center gap-2 rounded-md px-2.5 text-[13px] text-ink-2 outline-none data-[highlighted]:bg-surface-2"
+            className="flex h-8 cursor-pointer items-center gap-2 rounded-md px-2.5 text-[0.8125rem] text-ink-2 outline-none data-[highlighted]:bg-surface-2"
           >
             <UserRound className="size-4" /> Profile & security
           </DropdownMenu.Item>
           <DropdownMenu.Item
             onSelect={async () => { await logout(); navigate('/login') }}
-            className="flex h-8 cursor-pointer items-center gap-2 rounded-md px-2.5 text-[13px] text-ink-2 outline-none data-[highlighted]:bg-surface-2"
+            className="flex h-8 cursor-pointer items-center gap-2 rounded-md px-2.5 text-[0.8125rem] text-ink-2 outline-none data-[highlighted]:bg-surface-2"
           >
             <LogOut className="size-4" /> Sign out
           </DropdownMenu.Item>
@@ -333,13 +348,13 @@ function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenChange: (
           />
           <Kbd>esc</Kbd>
         </div>
-        <Command.List className="max-h-[360px] overflow-y-auto p-1.5">
-          <Command.Empty className="px-3 py-6 text-center text-[13px] text-muted">No incidents match “{search}”.</Command.Empty>
+        <Command.List className="max-h-[22.5rem] overflow-y-auto p-1.5">
+          <Command.Empty className="px-3 py-6 text-center text-[0.8125rem] text-muted">No incidents match “{search}”.</Command.Empty>
           {results.data && results.data.items.length > 0 && (
             <Command.Group heading="Incidents" className="[&_[cmdk-group-heading]]:px-2.5 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:text-faint">
               {results.data.items.map((i) => (
                 <Command.Item key={i.number} value={i.number} onSelect={() => go(`/incidents/${i.number}`)}
-                  className="flex h-10 cursor-pointer items-center gap-3 rounded-md px-2.5 text-[13px] data-[selected=true]:bg-surface-2">
+                  className="flex h-10 cursor-pointer items-center gap-3 rounded-md px-2.5 text-[0.8125rem] data-[selected=true]:bg-surface-2">
                   <PriorityBadge priority={i.priority} />
                   <span className="tabular text-muted">{i.number}</span>
                   <span className="truncate">{i.title}</span>
@@ -352,7 +367,7 @@ function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenChange: (
               .filter((item) => !search || item.label.toLowerCase().includes(search.toLowerCase()))
               .map((item) => (
                 <Command.Item key={item.to} value={item.to} onSelect={() => go(item.to)}
-                  className="flex h-9 cursor-pointer items-center gap-2.5 rounded-md px-2.5 text-[13px] text-ink-2 data-[selected=true]:bg-surface-2 data-[selected=true]:text-ink">
+                  className="flex h-9 cursor-pointer items-center gap-2.5 rounded-md px-2.5 text-[0.8125rem] text-ink-2 data-[selected=true]:bg-surface-2 data-[selected=true]:text-ink">
                   {item.icon}{item.label}
                 </Command.Item>
               ))}
@@ -397,14 +412,14 @@ export function AppShell() {
       <a href="#main" className="sr-only z-50 rounded-lg bg-accent text-sm font-medium text-accent-ink no-underline shadow-pop focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:px-3 focus:py-2">
         Skip to content
       </a>
-      <div className="sticky top-0 hidden h-dvh w-[236px] shrink-0 border-r border-line bg-bg lg:block">
+      <div className="sticky top-0 hidden h-dvh w-[14.75rem] shrink-0 border-r border-line bg-bg lg:block">
         <Sidebar />
       </div>
 
       {mobileNav && (
         <div className="fixed inset-0 z-40 lg:hidden">
           <div className="absolute inset-0 bg-black/30" onClick={() => setMobileNav(false)} />
-          <div className="absolute inset-y-0 left-0 w-[260px] border-r border-line bg-bg shadow-pop animate-slide-in">
+          <div className="absolute inset-y-0 left-0 w-[16.25rem] border-r border-line bg-bg shadow-pop animate-slide-in">
             <IconButton label="Close menu" className="absolute right-2 top-3" onClick={() => setMobileNav(false)}><X className="size-4" /></IconButton>
             <Sidebar onNavigate={() => setMobileNav(false)} />
           </div>
@@ -416,7 +431,7 @@ export function AppShell() {
           <IconButton label="Open menu" className="lg:hidden" onClick={() => setMobileNav(true)}><Menu className="size-4" /></IconButton>
           <button
             onClick={() => setPaletteOpen(true)}
-            className="flex h-9 w-full max-w-sm items-center gap-2 rounded-lg border border-line bg-surface px-3 text-[13px] text-faint hover:border-line-strong cursor-pointer"
+            className="flex h-9 w-full max-w-sm items-center gap-2 rounded-lg border border-line bg-surface px-3 text-[0.8125rem] text-faint hover:border-line-strong cursor-pointer"
           >
             <Search className="size-4" />
             <span className="flex-1 text-left">Search incidents…</span>
@@ -430,7 +445,7 @@ export function AppShell() {
           </div>
         </header>
         <MajorIncidentBar />
-        <main id="main" tabIndex={-1} className="mx-auto outline-none w-full max-w-[1240px] flex-1 px-4 py-6 sm:px-8 sm:py-8">
+        <main id="main" tabIndex={-1} className="mx-auto outline-none w-full max-w-[77.5rem] flex-1 px-4 py-6 sm:px-8 sm:py-8">
           <Outlet />
         </main>
       </div>
@@ -457,7 +472,7 @@ function MajorIncidentBar() {
   return (
     <div role="status" aria-live="polite" className="border-b border-p1/25 bg-p1-soft">
       {majors.data.map((m) => (
-        <div key={m.number} className="mx-auto flex max-w-[1240px] flex-wrap items-center gap-x-3 gap-y-1.5 px-4 py-2.5 text-[13px] sm:px-8">
+        <div key={m.number} className="mx-auto flex max-w-[77.5rem] flex-wrap items-center gap-x-3 gap-y-1.5 px-4 py-2.5 text-[0.8125rem] sm:px-8">
           <Siren className="size-4 shrink-0 text-p1" aria-hidden />
           <span className="font-semibold text-p1">Major incident</span>
           <span className="min-w-0 flex-1 truncate">
@@ -487,7 +502,7 @@ export function RoleGate({ minimum, children }: { minimum: 'TECHNICIAN' | 'TEAM_
       <div className="flex flex-col items-center py-24 text-center">
         <ShieldCheck className="mb-3 size-8 text-faint" />
         <p className="font-medium">This area is for {ROLE_LABEL[minimum].toLowerCase()}s and above</p>
-        <Link to="/" className="mt-3 text-[13px] text-accent-text hover:underline">Back to home</Link>
+        <Link to="/" className="mt-3 text-[0.8125rem] text-accent-text hover:underline">Back to home</Link>
       </div>
     )
   }

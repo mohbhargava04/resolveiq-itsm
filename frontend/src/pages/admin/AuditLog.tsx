@@ -39,7 +39,7 @@ export default function AuditLog() {
       <Panel bodyClassName="p-0">
         {q.isLoading ? <Skeleton className="m-5 h-80" /> : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[820px] text-[13px]">
+            <table className="w-full min-w-[51.25rem] text-[0.8125rem]">
               <thead className="border-b border-line text-left text-xs text-muted">
                 <tr>
                   <th className="px-5 py-2.5 font-medium">When</th>
@@ -70,7 +70,7 @@ export default function AuditLog() {
         )}
       </Panel>
       {q.data && q.data.totalPages > 1 && (
-        <div className="mt-3 flex items-center justify-between text-[13px] text-muted">
+        <div className="mt-3 flex items-center justify-between text-[0.8125rem] text-muted">
           <span className="tabular">Page {q.data.page + 1} of {q.data.totalPages}, {q.data.totalItems} records</span>
           <div className="flex gap-1">
             <Button size="sm" variant="ghost" disabled={page === 0} icon={<ChevronLeft className="size-4" />} onClick={() => setPage(page - 1)}>Previous</Button>

@@ -136,5 +136,19 @@ event recording, available actions per role, row-level security and technician a
 | FE-01–07 | N/E | API client | Bearer header, nothing in localStorage; 401 → one refresh → retry; concurrent refreshes share one request; CSRF header on cookie endpoints; failed refresh ends the session; problem JSON → `ApiError`; query strings | `frontend/src/lib/api.test.ts` |
 | FE-08–10 | N/B | Formatting | Durations, SLA time left/overdue, initials, labels | `format.test.ts` |
 | FE-11–12 | N | UI building blocks | Skill chips add/dedupe/remove by keyboard; full-page empty state is an `h1` | `ui.test.tsx` |
+| DSP-01–04 | N/I/A | Display settings | Defaults for new accounts; saved settings returned with the profile and private to each person; unknown theme/size → 400, anonymous → 401; value object equality | `DisplayPreferencesIntegrationTest` |
+| AST-01 | N | Assistant creates an incident | Summary shows expected priority/SLA; nothing created before confirming; incident classified, prioritised, on SLA, assigned, notified, audited (`REPORTED_VIA_ASSISTANT`) | `AssistantConversationIntegrationTest` |
+| AST-02 | R | Ask only what is missing | Impact, urgency and device given in the description are not asked; device asked only for hardware/network | 〃 |
+| AST-03 | N/A | Self-help deflection | Article fix shown inline; "This fixed it" ends with no ticket and credits the article; an article never offered cannot be credited | 〃 |
+| AST-04 | R | Duplicate warning | Similar open incident shown; skip → no ticket; log anyway → created and flagged | 〃 |
+| AST-05 | R | Own duplicate | Person's own open report recognised; "yes, same" → no second ticket | 〃 |
+| AST-06 | N | Major incident | Active major incident on the service offered; "I'm affected too" links instead of a new report | 〃 |
+| AST-07 | I/B | Invalid answers | Too short, empty, over 4,000 chars (400), unknown service, nonsense answers: the step repeats with its options | 〃 |
+| AST-08 | A | Authorization | Sign-in required; another person (even an admin) cannot read or continue a conversation (403); unknown id 404 | 〃 |
+| AST-09 | N/E | Change, start over, cancel | Answers corrected from the summary; cancel creates nothing; a finished conversation accepts no more input | 〃 |
+| AST-10–13 | N/B | Assistant rules (unit) | Everyday phrases → impact/urgency without misreading negations; draft title and consistency; append-only transcript and terminal state; service wording score | `AssistantRulesTest` |
+| FE-17–20 | N/I | Display settings UI | Theme resolution and repair of bad stored values; applied to `<html>`; choices apply at once and persist; account settings load on sign-in and changes save back | `DisplaySettings.test.tsx` |
+| FE-21–23 | N/E | Assistant UI | Full conversation with inline guide, summary and incident link; restart/cancel commands and error recovery; voice dictation fills the box, unsupported browsers told | `Assistant.test.tsx` |
+| A11Y | — | Accessibility gate | axe-core (WCAG 2.1 A/AA + best practice) on 28 screens × 4 roles × 6 display combinations (5 themes + XL text with easier reading): 0 violations, no sideways overflow; contrast script: AA everywhere, AAA in High contrast | `frontend/scripts/a11y-scan.mjs`, `check-contrast.mjs` |
 | FE-13–16 | N/I | Sign-in page | Demo accounts folded until opened, one-click sign-in; wrong password message; 2FA step accepts digits only and needs six; Google button explains when not configured | `Login.test.tsx` |
 

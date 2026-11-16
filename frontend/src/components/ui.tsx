@@ -19,7 +19,7 @@ const VARIANTS: Record<Variant, string> = {
 }
 
 const SIZES: Record<Size, string> = {
-  sm: 'h-8 px-2.5 text-[13px] gap-1.5 rounded-md',
+  sm: 'h-8 px-2.5 text-[0.8125rem] gap-1.5 rounded-md',
   md: 'h-9 px-3.5 text-sm gap-2 rounded-lg',
 }
 
@@ -86,7 +86,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSel
   return (
     <select
       ref={ref}
-      className={cn(fieldBase, width(className), 'h-9 appearance-none pr-8 bg-[length:16px] bg-[right_0.6rem_center] bg-no-repeat cursor-pointer', className)}
+      className={cn(fieldBase, width(className), 'h-9 appearance-none pr-8 bg-[length:1rem] bg-[right_0.6rem_center] bg-no-repeat cursor-pointer', className)}
       style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238a919c' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")" }}
       {...rest}
     >
@@ -100,7 +100,7 @@ export function Field({ label, hint, error, children, className, htmlFor }: {
 }) {
   return (
     <div className={cn('flex flex-col gap-1.5', className)}>
-      <label htmlFor={htmlFor} className="text-[13px] font-medium text-ink-2">{label}</label>
+      <label htmlFor={htmlFor} className="text-[0.8125rem] font-medium text-ink-2">{label}</label>
       {children}
       {error ? <p className="text-xs text-p1">{error}</p> : hint ? <p className="text-xs text-muted">{hint}</p> : null}
     </div>
@@ -122,7 +122,7 @@ export function Segmented<T extends string>({ value, onChange, options, name }: 
           title={o.hint}
           onClick={() => onChange(o.value)}
           className={cn(
-            'h-8 rounded-md text-[13px] font-medium transition-all cursor-pointer',
+            'h-8 rounded-md text-[0.8125rem] font-medium transition-all cursor-pointer',
             value === o.value ? 'bg-surface text-ink shadow-sm ring-1 ring-line' : 'text-muted hover:text-ink',
           )}
         >
@@ -147,7 +147,7 @@ export function Switch({ checked, onChange, label, disabled }: { checked: boolea
         checked ? 'bg-accent' : 'bg-line-strong',
       )}
     >
-      <span className={cn('inline-block size-4 rounded-full bg-white shadow transition-transform', checked ? 'translate-x-[18px]' : 'translate-x-0.5')} />
+      <span className={cn('inline-block size-4 rounded-full bg-white shadow transition-transform', checked ? 'translate-x-[1.125rem]' : 'translate-x-0.5')} />
     </button>
   )
 }
@@ -188,7 +188,7 @@ export function Skeleton({ className }: { className?: string }) {
 }
 
 export function Kbd({ children }: { children: ReactNode }) {
-  return <kbd className="rounded border border-line bg-surface-2 px-1.5 py-px text-[11px] font-medium text-muted">{children}</kbd>
+  return <kbd className="rounded border border-line bg-surface-2 px-1.5 py-px text-[0.6875rem] font-medium text-muted">{children}</kbd>
 }
 
 export function Panel({ title, action, children, className, bodyClassName, description }: {
@@ -199,8 +199,8 @@ export function Panel({ title, action, children, className, bodyClassName, descr
       {(title || action) && (
         <header className="flex items-start justify-between gap-3 px-5 pt-4 pb-3">
           <div className="min-w-0">
-            {title && <h2 className="text-[15px] font-semibold">{title}</h2>}
-            {description && <p className="mt-0.5 text-[13px] text-muted">{description}</p>}
+            {title && <h2 className="text-[0.9375rem] font-semibold">{title}</h2>}
+            {description && <p className="mt-0.5 text-[0.8125rem] text-muted">{description}</p>}
           </div>
           {action}
         </header>
@@ -220,7 +220,7 @@ export function EmptyState({ icon, title, children, action, heading }: {
     <div className="flex flex-col items-center justify-center px-6 py-12 text-center">
       {icon && <div className="mb-3 text-faint">{icon}</div>}
       <Title className="font-medium text-ink">{title}</Title>
-      {children && <p className="mt-1 max-w-sm text-[13px] text-muted">{children}</p>}
+      {children && <p className="mt-1 max-w-sm text-[0.8125rem] text-muted">{children}</p>}
       {action && <div className="mt-4">{action}</div>}
     </div>
   )
@@ -274,7 +274,7 @@ export function Tabs<T extends string>({ value, onChange, tabs, label }: {
           type="button"
           aria-selected={value === t.value}
           onClick={() => onChange(t.value)}
-          className={cn('-mb-px border-b-2 px-3 pb-2.5 pt-1 text-[13.5px] font-medium transition-colors cursor-pointer',
+          className={cn('-mb-px border-b-2 px-3 pb-2.5 pt-1 text-[0.84375rem] font-medium transition-colors cursor-pointer',
             value === t.value ? 'border-accent text-ink' : 'border-transparent text-muted hover:text-ink')}
         >
           {t.label}
@@ -288,7 +288,7 @@ export function PageHeader({ title, description, actions }: { title: ReactNode; 
   return (
     <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
       <div className="min-w-0">
-        <h1 className="text-[22px] font-semibold leading-tight text-balance">{title}</h1>
+        <h1 className="text-[1.375rem] font-semibold leading-tight text-balance">{title}</h1>
         {description && <p className="mt-1 text-sm text-muted">{description}</p>}
       </div>
       {actions && <div className="flex items-center gap-2">{actions}</div>}
@@ -299,7 +299,7 @@ export function PageHeader({ title, description, actions }: { title: ReactNode; 
 export function ErrorNote({ error }: { error: unknown }) {
   if (!error) return null
   const message = error instanceof Error ? error.message : 'Something went wrong'
-  return <div role="alert" className="rounded-lg border border-p1/30 bg-p1-soft px-3 py-2 text-[13px] text-p1">{message}</div>
+  return <div role="alert" className="rounded-lg border border-p1/30 bg-p1-soft px-3 py-2 text-[0.8125rem] text-p1">{message}</div>
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -316,12 +316,12 @@ export function Dialog({ open, onOpenChange, title, description, children, foote
         <RDialog.Overlay className="fixed inset-0 z-40 bg-black/30 backdrop-blur-[2px] data-[state=open]:animate-[fade-in_0.15s]" />
         <RDialog.Content
           className="fixed left-1/2 top-[12vh] z-50 w-[calc(100vw-32px)] -translate-x-1/2 rounded-xl border border-line bg-surface shadow-pop animate-slide-in focus:outline-none"
-          style={{ maxWidth: width }}
+          style={{ maxWidth: `${width / 16}rem` }}
         >
           <div className="flex items-start justify-between gap-4 border-b border-line px-5 py-4">
             <div>
-              <RDialog.Title className="text-[15px] font-semibold">{title}</RDialog.Title>
-              {description && <RDialog.Description className="mt-0.5 text-[13px] text-muted">{description}</RDialog.Description>}
+              <RDialog.Title className="text-[0.9375rem] font-semibold">{title}</RDialog.Title>
+              {description && <RDialog.Description className="mt-0.5 text-[0.8125rem] text-muted">{description}</RDialog.Description>}
             </div>
             <RDialog.Close asChild>
               <IconButton label="Close"><X className="size-4" /></IconButton>

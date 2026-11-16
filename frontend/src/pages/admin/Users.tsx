@@ -42,7 +42,7 @@ export default function Users() {
         </>} />
 
       <div className="mb-4 flex flex-wrap gap-2">
-        <div className="relative min-w-[240px] flex-1">
+        <div className="relative min-w-[15rem] flex-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-faint" />
           <Input aria-label="Search people" value={filter} onChange={(e) => setFilter(e.target.value)} placeholder="Search name, email or department" className="pl-9" />
         </div>
@@ -55,7 +55,7 @@ export default function Users() {
       <Panel bodyClassName="p-0">
         {users.isLoading ? <Skeleton className="m-5 h-64" /> : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[760px] text-[13px]">
+            <table className="w-full min-w-[47.5rem] text-[0.8125rem]">
               <thead className="border-b border-line text-left text-xs text-muted">
                 <tr>
                   <th className="px-5 py-2.5 font-medium">Name</th>
@@ -86,7 +86,7 @@ export default function Users() {
                       {u.technician ? (
                         <div>
                           <div className="flex flex-wrap gap-1">
-                            {u.technician.skills.map((s) => <span key={s} className="rounded bg-surface-2 px-1.5 py-px text-[11px] text-ink-2">{s.toLowerCase()}</span>)}
+                            {u.technician.skills.map((s) => <span key={s} className="rounded bg-surface-2 px-1.5 py-px text-[0.6875rem] text-ink-2">{s.toLowerCase()}</span>)}
                           </div>
                           <div className="mt-1 text-xs text-muted">
                             {u.technician.activeIncidents ?? 0} of {u.technician.capacity} active, {u.technician.experienceLevel.toLowerCase()}
@@ -97,10 +97,10 @@ export default function Users() {
                     </td>
                     <td className="py-2.5">
                       <div className="flex flex-wrap gap-1">
-                        {u.googleLinked && <span className="rounded bg-surface-2 px-1.5 py-px text-[11px] text-ink-2">Google</span>}
-                        {u.passwordEnabled && <span className="rounded bg-surface-2 px-1.5 py-px text-[11px] text-ink-2">Password</span>}
-                        {u.mfaEnabled && <span className="rounded bg-ok-soft px-1.5 py-px text-[11px] font-medium text-ok">2FA</span>}
-                        {u.lockedUntil && new Date(u.lockedUntil) > new Date() && <span className="rounded bg-p1-soft px-1.5 py-px text-[11px] font-medium text-p1">Locked</span>}
+                        {u.googleLinked && <span className="rounded bg-surface-2 px-1.5 py-px text-[0.6875rem] text-ink-2">Google</span>}
+                        {u.passwordEnabled && <span className="rounded bg-surface-2 px-1.5 py-px text-[0.6875rem] text-ink-2">Password</span>}
+                        {u.mfaEnabled && <span className="rounded bg-ok-soft px-1.5 py-px text-[0.6875rem] font-medium text-ok">2FA</span>}
+                        {u.lockedUntil && new Date(u.lockedUntil) > new Date() && <span className="rounded bg-p1-soft px-1.5 py-px text-[0.6875rem] font-medium text-p1">Locked</span>}
                       </div>
                     </td>
                     <td className="py-2.5 text-muted">{u.lastLoginAt ? ago(u.lastLoginAt) : 'Never'}</td>
@@ -139,7 +139,7 @@ function ImportDialog({ onClose }: { onClose: () => void }) {
       footer={run.data ? <Button variant="primary" onClick={onClose}>Done</Button>
         : <><Button variant="ghost" onClick={onClose}>Cancel</Button><Button variant="primary" loading={run.isPending} disabled={!csv.trim()} onClick={() => run.mutate()}>Import</Button></>}>
       {run.data ? (
-        <ul className="space-y-1.5 text-[13px]">
+        <ul className="space-y-1.5 text-[0.8125rem]">
           {run.data.map((r) => (
             <li key={r.line} className="flex gap-2">
               <span className={cn('w-16 shrink-0 text-xs font-semibold', r.outcome === 'CREATED' ? 'text-ok' : r.outcome === 'SKIPPED' ? 'text-muted' : 'text-p1')}>{r.outcome.toLowerCase()}</span>
@@ -150,9 +150,9 @@ function ImportDialog({ onClose }: { onClose: () => void }) {
         </ul>
       ) : (
         <div className="space-y-3">
-          <Textarea rows={8} value={csv} onChange={(e) => setCsv(e.target.value)} className="font-mono text-[12.5px]" placeholder={TEMPLATE} aria-label="CSV" />
+          <Textarea rows={8} value={csv} onChange={(e) => setCsv(e.target.value)} className="font-mono text-[0.78125rem]" placeholder={TEMPLATE} aria-label="CSV" />
           <div className="flex flex-wrap items-center gap-2">
-            <label className="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-md border border-line-strong px-2.5 text-[13px] font-medium hover:bg-surface-2">
+            <label className="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-md border border-line-strong px-2.5 text-[0.8125rem] font-medium hover:bg-surface-2">
               <FileUp className="size-3.5" /> Choose a .csv file
               <input type="file" accept=".csv,text/csv" className="sr-only" onChange={async (e) => { const f = e.target.files?.[0]; if (f) setCsv(await f.text()) }} />
             </label>
@@ -185,7 +185,7 @@ function AccessSection({ user, onChanged }: { user: User; onChanged: () => void 
   const self = user.id === me.id
   return (
     <section className="space-y-3 rounded-lg border border-line p-4">
-      <h3 className="text-[13px] font-semibold">Access and security</h3>
+      <h3 className="text-[0.8125rem] font-semibold">Access and security</h3>
       <div className="flex flex-wrap items-end gap-2">
         <Field label="Role (clearance)" htmlFor="u-role" className="min-w-48 flex-1"
           hint={self ? 'You cannot change your own role' : 'Changing it ends their sessions immediately'}>
@@ -193,7 +193,7 @@ function AccessSection({ user, onChanged }: { user: User; onChanged: () => void 
             {ROLES.filter((r) => r !== 'MANAGER' || me.role === 'MANAGER' || user.role === 'MANAGER').map((r) => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}
           </Select>
         </Field>
-        <Button disabled={self || role === user.role || (becomingTechnical && !skills.length)} loading={changeRole.isPending} onClick={() => changeRole.mutate()} className="mb-[22px]">Change role</Button>
+        <Button disabled={self || role === user.role || (becomingTechnical && !skills.length)} loading={changeRole.isPending} onClick={() => changeRole.mutate()} className="mb-[1.375rem]">Change role</Button>
       </div>
       {becomingTechnical && (
         <Field label="Skills for routing" htmlFor="u-skills" hint="At least one, e.g. NETWORK, DATABASE, AUTHENTICATION">

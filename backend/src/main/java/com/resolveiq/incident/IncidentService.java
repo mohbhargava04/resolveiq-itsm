@@ -61,8 +61,8 @@ import java.util.function.BiConsumer;
 public class IncidentService {
 
     /** Minimum classifier confidence to accept an AI category without a human choosing one. */
-    static final double AUTO_CATEGORY_MIN_CONFIDENCE = 0.20;
-    static final String FALLBACK_CATEGORY = "APPLICATION";
+    public static final double AUTO_CATEGORY_MIN_CONFIDENCE = 0.20;
+    public static final String FALLBACK_CATEGORY = "APPLICATION";
 
     /** What happened when an incident was reported - shown to the reporter immediately. */
     public record ReportOutcome(Incident incident, List<SimilarIncident> similarIncidents,

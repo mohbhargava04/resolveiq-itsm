@@ -1,3 +1,4 @@
+import type { DisplayPreferences } from './display'
 // Types mirroring the backend DTOs (backend/src/main/java/com/resolveiq/web/dto).
 
 export type Role = 'EMPLOYEE' | 'TECHNICIAN' | 'TEAM_LEAD' | 'ADMIN' | 'MANAGER'
@@ -45,6 +46,8 @@ export interface User {
   mfaEnabled: boolean
   lockedUntil?: string
   technician?: TechnicianInfo
+  /** Display & accessibility settings saved on the account. */
+  display?: DisplayPreferences
 }
 
 export interface AuthResponse {
@@ -377,4 +380,38 @@ export interface OutboxRow {
 export interface InboundEmail {
   id: number; receivedAt: string; from: string; subject: string; excerpt?: string; outcome: string
   incidentNumber?: string; detail?: string
+}
+
+// ---- Report with assistant (chatbot) -----------------------------------------------------------
+
+export type ConversationOutcome = 'OPEN' | 'INCIDENT_CREATED' | 'DEFLECTED' | 'JOINED_MAJOR_INCIDENT' | 'DUPLICATE_AVOIDED' | 'CANCELLED'
+
+export interface AssistantOption { value: string; label: string; hint?: string }
+export interface AssistantArticle { id: number; title: string; symptoms: string; solution: string; deflections: number }
+export interface AssistantIncident { number: string; title: string; status: string; service: string; mine: boolean }
+export interface AssistantMajor { number: string; title: string; service: string; stage?: string; latestUpdate?: string }
+export interface AssistantSummary {
+  title: string; description: string; service?: string; category?: string; categoryConfidence?: number
+  impact?: string; urgency?: string; device?: string
+  priority?: Priority; priorityLabel?: string; responseMinutes?: number; resolutionMinutes?: number
+}
+export interface AssistantPrompt {
+  text: string
+  options: AssistantOption[]
+  allowText: boolean
+  placeholder?: string
+  articles: AssistantArticle[]
+  incidents: AssistantIncident[]
+  major?: AssistantMajor
+  summary?: AssistantSummary
+}
+export interface AssistantReply {
+  sessionId: number
+  step: string
+  done: boolean
+  outcome: ConversationOutcome
+  messages: string[]
+  prompt?: AssistantPrompt
+  incidentNumber?: string
+  articleId?: number
 }

@@ -67,7 +67,7 @@ export default function IncidentDetail() {
 
   return (
     <div>
-      <nav aria-label="Breadcrumb" className="mb-3 flex items-center gap-1 text-[13px] text-muted">
+      <nav aria-label="Breadcrumb" className="mb-3 flex items-center gap-1 text-[0.8125rem] text-muted">
         <Link to="/incidents" className="hover:text-ink">Incidents</Link>
         <ChevronRight className="size-3.5" />
         <span className="tabular text-ink-2">{i.number}</span>
@@ -76,8 +76,8 @@ export default function IncidentDetail() {
       <header className="mb-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0 max-w-3xl">
-            <h1 className="text-[24px] font-semibold leading-tight text-balance">{i.title}</h1>
-            <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px] text-muted">
+            <h1 className="text-[1.5rem] font-semibold leading-tight text-balance">{i.title}</h1>
+            <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-2 text-[0.8125rem] text-muted">
               <PriorityBadge priority={i.priority} showLabel />
               <StatusBadge status={i.status} />
               <span>{i.service.name}</span>
@@ -96,7 +96,7 @@ export default function IncidentDetail() {
         </div>
       </header>
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <div className="min-w-0 space-y-6">
           {i.major && <MajorPanel i={i} canUpdate={can('POST_MAJOR_UPDATE')} onUpdate={() => setDialog('majorUpdate')} />}
           {i.majorParent && <MajorParentNotice i={i} />}
@@ -113,8 +113,8 @@ export default function IncidentDetail() {
 
           <section className="rounded-xl border border-line bg-surface">
             <div className="px-5 pt-4">
-              <h2 className="text-[15px] font-semibold">Description</h2>
-              <p className="mt-2 whitespace-pre-wrap text-[14px] leading-relaxed text-ink-2">{i.description}</p>
+              <h2 className="text-[0.9375rem] font-semibold">Description</h2>
+              <p className="mt-2 whitespace-pre-wrap text-[0.875rem] leading-relaxed text-ink-2">{i.description}</p>
             </div>
             <ActivityTabs i={i} canNote={can('ADD_NOTE')} canInternal={can('ADD_INTERNAL_NOTE')} />
           </section>
@@ -186,7 +186,7 @@ function SlaPanel({ i }: { i: Incident }) {
   return (
     <section className="rounded-xl border border-line bg-surface px-5 py-4" aria-label="Service level">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 className="text-[15px] font-semibold">Service level</h2>
+        <h2 className="text-[0.9375rem] font-semibold">Service level</h2>
         <span className="text-xs text-muted">{s.policyName}{s.paused && ' — paused while waiting for the reporter'}</span>
       </div>
       <div className="mt-4 grid gap-5 sm:grid-cols-2">
@@ -196,7 +196,7 @@ function SlaPanel({ i }: { i: Incident }) {
             <span className="tabular">due {when(s.responseDueAt)}</span>
           </div>
           {responseDone ? (
-            <p className={cn('text-[13px] font-medium', s.responseBreached ? 'text-p1' : 'text-ok')}>
+            <p className={cn('text-[0.8125rem] font-medium', s.responseBreached ? 'text-p1' : 'text-ok')}>
               {s.responseBreached ? 'Late' : 'Met'}: acknowledged after {duration(s.responseMinutesTaken)}
             </p>
           ) : (
@@ -211,7 +211,7 @@ function SlaPanel({ i }: { i: Incident }) {
             <span className="tabular">due {when(s.resolutionDueAt)}</span>
           </div>
           {s.resolvedAt ? (
-            <p className={cn('text-[13px] font-medium', s.resolutionBreached ? 'text-p1' : 'text-ok')}>
+            <p className={cn('text-[0.8125rem] font-medium', s.resolutionBreached ? 'text-p1' : 'text-ok')}>
               {s.resolutionBreached ? 'Late' : 'Met'}: resolved in {duration(s.resolutionMinutesTaken)}
             </p>
           ) : (
@@ -230,12 +230,12 @@ function DuplicateNotice({ i, canAct, onConfirm, onDismiss }: { i: Incident; can
       <div className="flex flex-wrap items-start gap-3">
         <Copy className={cn('mt-0.5 size-4', d.confirmed ? 'text-muted' : 'text-p2')} />
         <div className="min-w-0 flex-1">
-          <p className="text-[13.5px] font-medium">
+          <p className="text-[0.84375rem] font-medium">
             {d.confirmed ? 'Merged into ' : 'Looks like '}
             <Link to={`/incidents/${d.number}`} className="text-accent-text hover:underline">{d.number}</Link>
             {!d.confirmed && d.score !== undefined && <span className="font-normal text-muted"> ({Math.round(d.score * 100)}% similar)</span>}
           </p>
-          <p className="mt-0.5 truncate text-[13px] text-muted">{d.title}</p>
+          <p className="mt-0.5 truncate text-[0.8125rem] text-muted">{d.title}</p>
           {d.confirmed && <p className="mt-1 text-xs text-muted">Progress is tracked on {d.number}; you'll be notified when it is resolved.</p>}
         </div>
         {canAct && !d.confirmed && (
@@ -254,8 +254,8 @@ function ProvideInfo({ i, busy, onSend }: { i: Incident; busy: boolean; onSend: 
   const question = [...i.notes].reverse().find((n) => n.type === 'INFO_REQUEST')
   return (
     <section className="rounded-xl border border-p2/40 bg-surface px-5 py-4">
-      <h2 className="text-[15px] font-semibold">{question?.author ?? 'The technician'} needs more information</h2>
-      {question && <blockquote className="mt-2 border-l-2 border-p2 pl-3 text-[14px] text-ink-2">{question.content}</blockquote>}
+      <h2 className="text-[0.9375rem] font-semibold">{question?.author ?? 'The technician'} needs more information</h2>
+      {question && <blockquote className="mt-2 border-l-2 border-p2 pl-3 text-[0.875rem] text-ink-2">{question.content}</blockquote>}
       <form className="mt-3 space-y-2" onSubmit={(e) => { e.preventDefault(); if (text.trim()) onSend(text.trim()) }}>
         <Textarea rows={3} value={text} onChange={(e) => setText(e.target.value)} placeholder="Your answer" aria-label="Your answer" />
         <div className="flex justify-end"><Button type="submit" variant="primary" loading={busy} disabled={!text.trim()}>Send reply</Button></div>
@@ -268,12 +268,12 @@ function ResolutionBox({ i }: { i: Incident }) {
   const r = i.resolution!
   return (
     <section className="rounded-xl border border-ok/30 bg-ok-soft/50 px-5 py-4">
-      <h2 className="flex items-center gap-2 text-[15px] font-semibold"><CircleCheck className="size-4 text-ok" /> How it was fixed</h2>
-      <p className="mt-2 whitespace-pre-wrap text-[14px] leading-relaxed">{r.summary}</p>
-      {r.rootCause && <p className="mt-2 text-[13px] text-muted"><span className="font-medium text-ink-2">Root cause:</span> {r.rootCause}</p>}
+      <h2 className="flex items-center gap-2 text-[0.9375rem] font-semibold"><CircleCheck className="size-4 text-ok" /> How it was fixed</h2>
+      <p className="mt-2 whitespace-pre-wrap text-[0.875rem] leading-relaxed">{r.summary}</p>
+      {r.rootCause && <p className="mt-2 text-[0.8125rem] text-muted"><span className="font-medium text-ink-2">Root cause:</span> {r.rootCause}</p>}
       <p className="mt-2 text-xs text-muted">{r.resolvedBy?.name ?? 'Resolved'} {r.resolvedAt ? `on ${fullDate(r.resolvedAt)}` : ''}</p>
       {i.feedback && (
-        <p className="mt-3 flex items-center gap-1 text-[13px]">
+        <p className="mt-3 flex items-center gap-1 text-[0.8125rem]">
           {[1, 2, 3, 4, 5].map((n) => <Star key={n} className={cn('size-4', n <= i.feedback!.rating ? 'fill-p2 text-p2' : 'text-line-strong')} />)}
           <span className="ml-1 text-muted">{i.feedback.comment ? `“${i.feedback.comment}”` : 'Rated by the reporter'}</span>
         </p>
@@ -289,7 +289,7 @@ function FeedbackBox({ busy, onSubmit }: { busy: boolean; onSubmit: (rating: num
   const labels = ['', 'Poor', 'Below expectations', 'Okay', 'Good', 'Excellent']
   return (
     <section className="rounded-xl border border-line bg-surface px-5 py-4">
-      <h2 className="text-[15px] font-semibold">How did we do?</h2>
+      <h2 className="text-[0.9375rem] font-semibold">How did we do?</h2>
       <div className="mt-2 flex items-center gap-1" role="radiogroup" aria-label="Rating">
         {[1, 2, 3, 4, 5].map((n) => (
           <button key={n} type="button" role="radio" aria-checked={rating === n} aria-label={`${n} star${n > 1 ? 's' : ''}`}
@@ -297,7 +297,7 @@ function FeedbackBox({ busy, onSubmit }: { busy: boolean; onSubmit: (rating: num
             <Star className={cn('size-6 transition-colors', n <= (hover || rating) ? 'fill-p2 text-p2' : 'text-line-strong')} />
           </button>
         ))}
-        <span className="ml-2 text-[13px] text-muted">{labels[hover || rating]}</span>
+        <span className="ml-2 text-[0.8125rem] text-muted">{labels[hover || rating]}</span>
       </div>
       {rating > 0 && (
         <div className="mt-3 space-y-2">
@@ -316,7 +316,7 @@ function ActivityTabs({ i, canNote, canInternal }: { i: Incident; canNote: boole
       <div role="tablist" className="flex gap-4 px-5">
         {(['activity', 'history'] as const).map((t) => (
           <button key={t} role="tab" aria-selected={tab === t} onClick={() => setTab(t)}
-            className={cn('-mb-px border-b-2 py-3 text-[13.5px] font-medium transition-colors cursor-pointer',
+            className={cn('-mb-px border-b-2 py-3 text-[0.84375rem] font-medium transition-colors cursor-pointer',
               tab === t ? 'border-accent text-ink' : 'border-transparent text-muted hover:text-ink')}>
             {t === 'activity' ? `Conversation (${i.notes.filter((n) => n.type !== 'SYSTEM').length})` : 'Audit history'}
           </button>
@@ -336,14 +336,14 @@ function History({ number }: { number: string }) {
     <ol className="relative ml-1.5 border-l border-line">
       {q.data?.map((a) => (
         <li key={a.id} className="relative pb-4 pl-5 last:pb-0">
-          <span className="absolute -left-[5px] top-1.5 size-2.5 rounded-full border-2 border-surface bg-line-strong" />
+          <span className="absolute -left-[0.3125rem] top-1.5 size-2.5 rounded-full border-2 border-surface bg-line-strong" />
           <div className="flex flex-wrap items-baseline gap-x-2 text-xs text-muted">
-            <span className="text-[13px] font-medium text-ink">{humanise(a.action)}</span>
+            <span className="text-[0.8125rem] font-medium text-ink">{humanise(a.action)}</span>
             {a.previousState && a.newState && (
               <span className="tabular">{humanise(a.previousState)} <span aria-hidden>→</span> {humanise(a.newState)}</span>
             )}
           </div>
-          <p className="mt-0.5 text-[13px] text-ink-2">{a.description}</p>
+          <p className="mt-0.5 text-[0.8125rem] text-ink-2">{a.description}</p>
           <p className="mt-0.5 text-xs text-faint">{a.actor}{a.actorRole && a.actorRole !== 'SYSTEM' ? `, ${humanise(a.actorRole).toLowerCase()}` : ''} at {fullDate(a.occurredAt)}</p>
         </li>
       ))}
@@ -364,10 +364,10 @@ function DetailsCard({ i }: { i: Incident }) {
   if (i.escalation.level !== 'NONE') rows.push(['Escalated to', `${i.escalation.escalatedTo?.name ?? i.escalation.label}`])
   return (
     <section className="rounded-xl border border-line bg-surface p-4">
-      <h2 className="mb-3 text-[13.5px] font-semibold">Details</h2>
-      <dl className="space-y-2.5 text-[13px]">
+      <h2 className="mb-3 text-[0.84375rem] font-semibold">Details</h2>
+      <dl className="space-y-2.5 text-[0.8125rem]">
         {rows.map(([k, v]) => (
-          <div key={k} className="grid grid-cols-[120px_minmax(0,1fr)] gap-2">
+          <div key={k} className="grid grid-cols-[7.5rem_minmax(0,1fr)] gap-2">
             <dt className="text-muted">{k}</dt>
             <dd className="min-w-0 text-ink">{v}</dd>
           </div>
@@ -375,7 +375,7 @@ function DetailsCard({ i }: { i: Incident }) {
       </dl>
       {i.priorityRationale && (
         <details className="mt-4 border-t border-line pt-3 text-xs text-muted">
-          <summary className="cursor-pointer select-none text-[13px] font-medium text-ink-2 hover:text-ink">Why {i.priority}?</summary>
+          <summary className="cursor-pointer select-none text-[0.8125rem] font-medium text-ink-2 hover:text-ink">Why {i.priority}?</summary>
           <ul className="mt-2 space-y-1">{i.priorityRationale.split('; ').map((f) => <li key={f}>{f}</li>)}</ul>
           <p className="mt-2">Calculated by {i.priorityStrategy}</p>
         </details>
@@ -388,11 +388,11 @@ function KnowledgeCard({ i }: { i: Incident }) {
   const navigate = useNavigate()
   return (
     <section className="rounded-xl border border-line bg-surface p-4">
-      <h2 className="mb-1 flex items-center gap-2 text-[13.5px] font-semibold"><Library className="size-4 text-accent-text" />Knowledge base</h2>
+      <h2 className="mb-1 flex items-center gap-2 text-[0.84375rem] font-semibold"><Library className="size-4 text-accent-text" />Knowledge base</h2>
       {i.knowledgeArticleId ? (
         <>
           <p className="text-xs text-muted">An article was written from this incident.</p>
-          <Link to={`/kb/${i.knowledgeArticleId}`} className="mt-2 inline-block text-[13px] font-medium text-accent-text hover:underline">Open the article</Link>
+          <Link to={`/kb/${i.knowledgeArticleId}`} className="mt-2 inline-block text-[0.8125rem] font-medium text-accent-text hover:underline">Open the article</Link>
         </>
       ) : (
         <>
@@ -410,7 +410,7 @@ function RiskCard({ number }: { number: string }) {
   const r = q.data
   return (
     <section className="rounded-xl border border-line bg-surface p-4">
-      <h2 className="mb-2 flex items-center justify-between text-[13.5px] font-semibold">
+      <h2 className="mb-2 flex items-center justify-between text-[0.84375rem] font-semibold">
         Predicted SLA risk <RiskTag risk={r} />
       </h2>
       <div className="flex items-baseline gap-2">
@@ -430,7 +430,7 @@ function SuggestionsCard({ number, canResolve, onUse }: { number: string; canRes
   if (!q.data?.length) return null
   return (
     <section className="rounded-xl border border-line bg-surface p-4">
-      <h2 className="mb-1 flex items-center gap-2 text-[13.5px] font-semibold"><Lightbulb className="size-4 text-accent-text" />Fixes that worked before</h2>
+      <h2 className="mb-1 flex items-center gap-2 text-[0.84375rem] font-semibold"><Lightbulb className="size-4 text-accent-text" />Fixes that worked before</h2>
       <p className="mb-3 text-xs text-muted">From resolved incidents with similar descriptions.</p>
       <ul className="space-y-3">
         {q.data.map((r) => (
@@ -439,8 +439,8 @@ function SuggestionsCard({ number, canResolve, onUse }: { number: string; canRes
               <Link to={`/incidents/${r.incidentNumber}`} className="font-medium tabular text-accent-text hover:underline">{r.incidentNumber}</Link>
               <span className="tabular text-muted">{Math.round(r.relevance * 100)}% match</span>
             </div>
-            <p className="mt-1 text-[13px] font-medium">{r.title}</p>
-            <p className="mt-1 text-[13px] text-ink-2">{r.summary}</p>
+            <p className="mt-1 text-[0.8125rem] font-medium">{r.title}</p>
+            <p className="mt-1 text-[0.8125rem] text-ink-2">{r.summary}</p>
             {canResolve && (
               <button onClick={() => onUse(r)} className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-accent-text hover:underline cursor-pointer">
                 <BookOpenCheck className="size-3.5" />Use this fix
@@ -459,13 +459,13 @@ function SimilarCard({ number }: { number: string }) {
   if (!items.length) return null
   return (
     <section className="rounded-xl border border-line bg-surface p-4">
-      <h2 className="mb-3 text-[13.5px] font-semibold">Similar open incidents</h2>
+      <h2 className="mb-3 text-[0.84375rem] font-semibold">Similar open incidents</h2>
       <ul className="space-y-2">
         {items.slice(0, 4).map((s) => (
           <li key={s.number}>
             <Link to={`/incidents/${s.number}`} className="block rounded-lg px-2 py-1.5 -mx-2 hover:bg-surface-2">
               <span className="flex justify-between text-xs"><span className="font-medium tabular text-accent-text">{s.number}</span><span className="tabular text-muted">{Math.round(s.score * 100)}%</span></span>
-              <span className="block truncate text-[13px]">{s.title}</span>
+              <span className="block truncate text-[0.8125rem]">{s.title}</span>
             </Link>
           </li>
         ))}
@@ -556,7 +556,7 @@ function DetailSkeleton() {
       <Skeleton className="h-4 w-40" />
       <Skeleton className="h-8 w-2/3" />
       <Skeleton className="h-5 w-1/2" />
-      <div className="grid gap-6 pt-4 lg:grid-cols-[1fr_320px]">
+      <div className="grid gap-6 pt-4 lg:grid-cols-[1fr_20rem]">
         <div className="space-y-4"><Skeleton className="h-28" /><Skeleton className="h-64" /></div>
         <Skeleton className="h-72" />
       </div>

@@ -7,10 +7,11 @@ import { Building2, Copy, Download, KeyRound, Laptop, LogOut, ShieldAlert, Shiel
 import { api, ApiError } from '@/lib/api'
 import { useAuth, useUser } from '@/lib/auth'
 import { ago, cn, ROLE_LABEL } from '@/lib/format'
+import { DisplaySettings } from '@/components/DisplaySettings'
 import type { AuthResponse, SessionView, User } from '@/lib/types'
 import { Avatar, Button, ChipsInput, Dialog, ErrorNote, Field, Input, PageHeader, Panel, Skeleton, Tabs } from '@/components/ui'
 
-type Tab = 'details' | 'security'
+type Tab = 'details' | 'security' | 'display'
 
 export default function Profile() {
   const user = useUser()
@@ -20,17 +21,22 @@ export default function Profile() {
 
   return (
     <div className="max-w-3xl">
-      <PageHeader title="Your profile" description="Your details and how you sign in." />
+      <PageHeader title="Your profile" description="Your details, how you sign in, and how ResolveIQ looks for you." />
       {mfaSetupRequired && (
-        <div role="alert" className="mb-6 flex gap-3 rounded-xl border border-p2/30 bg-p2-soft px-4 py-3 text-[13px] text-ink">
+        <div role="alert" className="mb-6 flex gap-3 rounded-xl border border-p2/30 bg-p2-soft px-4 py-3 text-[0.8125rem] text-ink">
           <ShieldAlert className="mt-0.5 size-4 shrink-0 text-p2" />
           <span>Your organisation requires two-step verification for {ROLE_LABEL[user.role].toLowerCase()} accounts. Set it up below to continue.</span>
         </div>
       )}
       <Tabs label="Profile sections" value={tab} onChange={(v) => setParams({ tab: v })}
-        tabs={[{ value: 'details', label: 'Details' }, { value: 'security', label: 'Sign-in & security' }]} />
+        tabs={[{ value: 'details', label: 'Details' }, { value: 'security', label: 'Sign-in & security' }, { value: 'display', label: 'Display & accessibility' }]} />
       <div className="mt-6 space-y-6">
-        {tab === 'details' ? <DetailsSection /> : (<><SignInMethods /><PasswordSection /><MfaSection /><SessionsSection /></>)}
+        {tab === 'details' ? <DetailsSection />
+          : tab === 'display' ? (
+            <Panel title="Display & accessibility" description="Make ResolveIQ comfortable to read. Changes apply straight away.">
+              <DisplaySettings />
+            </Panel>
+          ) : (<><SignInMethods /><PasswordSection /><MfaSection /><SessionsSection /></>)}
       </div>
     </div>
   )
@@ -57,7 +63,7 @@ function DetailsSection() {
           <Avatar name={user.fullName} src={user.avatarUrl} size={56} />
           <div className="min-w-0">
             <p className="truncate font-medium">{user.email}</p>
-            <p className="text-[13px] text-muted">{ROLE_LABEL[user.role]} · set by your IT administrator</p>
+            <p className="text-[0.8125rem] text-muted">{ROLE_LABEL[user.role]} · set by your IT administrator</p>
           </div>
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
@@ -93,12 +99,12 @@ function SignInMethods() {
       <ul className="divide-y divide-line rounded-lg border border-line">
         <li className="flex items-center gap-3 px-4 py-3">
           <Building2 className="size-4 text-muted" aria-hidden />
-          <span className="flex-1 text-[13.5px]">Company account (Google)</span>
+          <span className="flex-1 text-[0.84375rem]">Company account (Google)</span>
           <span className={cn('text-xs font-medium', user.googleLinked ? 'text-ok' : 'text-faint')}>{user.googleLinked ? 'Linked' : 'Not linked yet'}</span>
         </li>
         <li className="flex items-center gap-3 px-4 py-3">
           <KeyRound className="size-4 text-muted" aria-hidden />
-          <span className="flex-1 text-[13.5px]">Password</span>
+          <span className="flex-1 text-[0.84375rem]">Password</span>
           <span className={cn('text-xs font-medium', user.passwordEnabled ? 'text-ok' : 'text-faint')}>{user.passwordEnabled ? 'On' : 'Not set'}</span>
         </li>
       </ul>
@@ -168,7 +174,7 @@ function MfaSection() {
     >
       {status.isLoading ? <Skeleton className="h-9 w-40" /> : enabled ? (
         <div className="flex flex-wrap items-center gap-2">
-          <p className="mr-auto text-[13px] text-muted">{status.data?.recoveryCodesLeft ?? 0} unused recovery codes left.</p>
+          <p className="mr-auto text-[0.8125rem] text-muted">{status.data?.recoveryCodesLeft ?? 0} unused recovery codes left.</p>
           <Button size="sm" onClick={() => setRegenOpen(true)}>New recovery codes</Button>
           {!status.data?.required && <Button size="sm" variant="ghost" onClick={() => setDisableOpen(true)}>Turn off</Button>}
         </div>
@@ -199,16 +205,16 @@ function MfaSetupDialog({ onClose, onDone }: { onClose: () => void; onDone: (cod
     <Dialog open onOpenChange={(o) => !o && onClose()} title="Set up two-step verification" width={460}
       footer={<><Button variant="ghost" onClick={onClose}>Cancel</Button><Button variant="primary" loading={enable.isPending} disabled={code.length !== 6} onClick={() => enable.mutate()}>Turn on</Button></>}>
       {setup.error ? <ErrorNote error={setup.error} /> : (
-        <ol className="space-y-5 text-[13px]">
+        <ol className="space-y-5 text-[0.8125rem]">
           <li>
             <p className="font-medium">1. Scan this QR code with your authenticator app</p>
             <div className="mt-3 flex items-center gap-4">
-              <div className="flex size-[168px] shrink-0 items-center justify-center rounded-lg border border-line bg-white p-2">
+              <div className="flex size-[10.5rem] shrink-0 items-center justify-center rounded-lg border border-line bg-white p-2">
                 {qr ? <img src={qr} alt="QR code for your authenticator app" className="size-full" /> : <Skeleton className="size-full" />}
               </div>
               <div className="min-w-0 text-muted">
                 <p>Can't scan? Enter this key:</p>
-                <p className="mt-1 break-all rounded-md bg-surface-2 px-2 py-1.5 font-mono text-[12px] text-ink">{setup.data?.secret.replace(/(.{4})/g, '$1 ').trim()}</p>
+                <p className="mt-1 break-all rounded-md bg-surface-2 px-2 py-1.5 font-mono text-[0.75rem] text-ink">{setup.data?.secret.replace(/(.{4})/g, '$1 ').trim()}</p>
               </div>
             </div>
           </li>
@@ -269,7 +275,7 @@ function RecoveryCodesDialog({ codes, onClose }: { codes: string[]; onClose: () 
     <Dialog open onOpenChange={(o) => !o && onClose()} title="Save your recovery codes"
       description="Each code signs you in once if you lose your phone. They are shown only now."
       footer={<Button variant="primary" onClick={onClose}>I've saved them</Button>}>
-      <ul className="grid grid-cols-2 gap-2 rounded-lg bg-surface-2 p-4 font-mono text-[13px]">
+      <ul className="grid grid-cols-2 gap-2 rounded-lg bg-surface-2 p-4 font-mono text-[0.8125rem]">
         {codes.map((c) => <li key={c} className="tabular">{c}</li>)}
       </ul>
       <div className="mt-3 flex gap-2">
@@ -306,9 +312,9 @@ function SessionsSection() {
             <li key={s.id} className="flex items-center gap-3 px-4 py-3">
               <Laptop className="size-4 shrink-0 text-muted" aria-hidden />
               <div className="min-w-0 flex-1">
-                <p className="flex items-center gap-2 text-[13.5px] font-medium">
+                <p className="flex items-center gap-2 text-[0.84375rem] font-medium">
                   {s.device}
-                  {s.current && <span className="rounded-full bg-accent-soft px-2 py-px text-[11px] font-medium text-accent-text">This device</span>}
+                  {s.current && <span className="rounded-full bg-accent-soft px-2 py-px text-[0.6875rem] font-medium text-accent-text">This device</span>}
                 </p>
                 <p className="text-xs text-muted">{s.method} · {s.ipAddress ?? 'unknown address'} · active {ago(s.lastActiveAt)}</p>
               </div>

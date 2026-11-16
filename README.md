@@ -19,8 +19,8 @@ e-mail, bulk actions, and company sign-in with Google and two-step verification.
 |---|---|
 | **Backend** | Java 21 · Spring Boot 3.5 · Spring Security (JWT + rotating refresh cookies, OIDC, TOTP) · JPA/Hibernate · Flyway |
 | **Database** | PostgreSQL 16 (production) · H2 (zero-setup development) |
-| **Frontend** | React 19 + TypeScript + Vite + Tailwind CSS; light, dark and system themes |
-| **Quality** | 145 automated tests (129 backend, 16 frontend), 82% backend line coverage, 0 accessibility violations (axe, WCAG 2.1 AA), GitHub Actions CI + CodeQL + Dependabot |
+| **Frontend** | React 19 + TypeScript + Vite + Tailwind CSS; 6 themes (incl. high contrast), adjustable text size, voice input |
+| **Quality** | 170 automated tests (147 backend, 23 frontend), 0 accessibility violations (axe, WCAG 2.1 AA) across 6 display settings, GitHub Actions CI + CodeQL + Dependabot |
 | **Security** | OWASP Top 10:2025 mapping with a test for each claim — see [SECURITY.md](docs/SECURITY.md) |
 | **Deployment** | Docker image, Docker Compose, one-click Render Blueprint — see [DEPLOYMENT.md](docs/DEPLOYMENT.md) |
 | **API docs** | Swagger UI at `http://localhost:8080/swagger-ui.html` (development) |
@@ -50,7 +50,7 @@ npm run build:backend           # rebuild the bundled copy served by Spring Boot
 ```
 
 ```sh
-./mvnw test                     # backend: 129 tests
+./mvnw test                     # backend: 147 tests
 npm test                        # frontend: 16 tests (in frontend/)
 ITSM_RESET_DEMO=true ./mvnw spring-boot:run   # rebuild the live demo scenario (use before recording)
 docker compose up --build       # production-like stack with PostgreSQL (from the repo root)
@@ -83,7 +83,7 @@ docker compose up --build       # production-like stack with PostgreSQL (from th
 | Complete audit history | `AuditTrailObserver` → immutable `AuditRecord` (who, when, action, previous → new state) |
 | ≥ 5 search criteria | **13**: text, number, status, priority, category, service, technician, reporter, SLA status, escalated, open-only, date from/to |
 | ≥ 2 intelligent features | **8**: duplicate detection, correlation (with major-incident suggestion), auto-escalation, smart recommendation, SLA risk prediction, auto-categorisation (Naive Bayes ML), suggested resolutions, self-help deflection |
-| ≥ 2 design patterns | **9**: Strategy, State, Observer, Factory, Adapter, Chain of Responsibility, Template Method, Repository, Builder |
+| ≥ 2 design patterns | **10**: Strategy, State (incident lifecycle *and* assistant conversation), Observer, Factory, Adapter, Chain of Responsibility, Template Method, Repository, Builder, Facade |
 | Persistence | PostgreSQL / H2 with Flyway-versioned schema |
 | Security | BCrypt, 15-minute JWTs + rotating HttpOnly refresh cookies with theft detection, Google sign-in (OIDC + PKCE) limited to company domains, TOTP two-step verification, rate limiting, lockout, row-level access, strict CSP, safe uploads, audit of security events |
 | New categories without code changes | Categories are data; the classifier learns new ones from their keywords instantly |
@@ -100,6 +100,9 @@ docker compose up --build       # production-like stack with PostgreSQL (from th
 | Bulk actions | Assign, link, mark duplicate, resolve or close many incidents at once |
 | Accounts | Google company sign-in, first-login profile, two-step verification with recovery codes, "where you're signed in", password reset |
 | Administration | Role changes, CSV import of staff, unlock, sign out everywhere, allowed domains, security overview |
+| **Report with assistant** (chatbot) | A guided conversation that suggests the service, offers knowledge-base fixes inline ("This fixed it" ends without a ticket), offers "I'm affected too" for an ongoing major incident, warns about duplicates, asks only for what is missing, shows the expected priority and SLA, then files through the normal pipeline. Rule-based + the existing ML; no external AI key needed |
+| **Voice reporting** | Microphone button in the assistant and on the report form (browser Web Speech API; graceful message where unsupported) |
+| **Display & accessibility** | Per-person text size (4 steps, whole UI scales), 6 themes incl. Dim, Warm paper and High contrast (WCAG AAA 7:1), reduce motion, easier reading, underlined links; saved to the account and applied before first paint; nothing relies on colour alone |
 
 ## Documentation
 

@@ -202,3 +202,21 @@ messages are stripped. An e-mail without a reference opens a new incident; its s
 whose name and description are most similar to the e-mail (TF-IDF, threshold 0.08, falling back to *Devices*).
 The new incident then goes through the normal pipeline — classification, priority, duplicate check, assignment.
 
+
+## 13. Report with assistant — understanding a conversation (innovation: chatbot reporting)
+
+The assistant uses no external AI service; everything is deterministic and unit-tested.
+
+- **Service guess** (`ServiceMatcher`): `score = 0.6 × wording + 0.4 × history`.
+  *Wording* — share of the service's own name words (counted double) and description words that appear in the text; an exact
+  mention of the service name scores 1. *History* — a k-nearest-neighbour vote (k = 8, similarity ≥ 0.2) over past incidents
+  using the TF-IDF cosine similarity of §5, each neighbour voting for its service with its similarity. Below 0.18 the assistant
+  does not guess; it lists the services. The person always confirms, because the service drives priority, SLA and routing.
+- **Category** — the same Naive Bayes classifier and confidence threshold (0.20) as the form; the summary shows its confidence.
+- **Hints in the first message** (`AnswerInterpreter`): ordered phrase lists map everyday words to impact ("just me" → LOW,
+  "my team" → MEDIUM, "all students" → CRITICAL) and urgency ("not urgent" is checked before "urgent"). One-word answers such as
+  "high" count only as a direct reply, never inside a description, so "the high-resolution monitor" is not read as urgency.
+  Named devices (laptop, printer…) are noted for hardware and network problems.
+- **Self-help, duplicates, major incidents** — the existing algorithms of §5, §10 and §11, reached through one facade
+  (`DraftInsight`), so the conversation and the form can never disagree.
+- **Voice** — speech recognition runs in the browser (Web Speech API); the server receives only text.

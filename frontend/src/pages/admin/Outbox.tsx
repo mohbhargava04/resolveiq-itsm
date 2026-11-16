@@ -44,10 +44,10 @@ function Outgoing() {
               return (
                 <li key={n.id}>
                   <button onClick={() => setOpen(expanded ? null : n.id)} aria-expanded={expanded}
-                    className="grid w-full grid-cols-[28px_minmax(0,1fr)_auto] items-start gap-3 px-5 py-3 text-left hover:bg-surface-2/50 cursor-pointer">
+                    className="grid w-full grid-cols-[1.75rem_minmax(0,1fr)_auto] items-start gap-3 px-5 py-3 text-left hover:bg-surface-2/50 cursor-pointer">
                     <span className={cn('mt-0.5 flex size-7 items-center justify-center rounded-md', n.urgent ? 'bg-p1-soft text-p1' : 'bg-surface-2 text-muted')}><Icon className="size-3.5" /></span>
                     <span className="min-w-0">
-                      <span className="block truncate text-[13.5px] font-medium">{n.subject}</span>
+                      <span className="block truncate text-[0.84375rem] font-medium">{n.subject}</span>
                       <span className="block truncate text-xs text-muted">
                         To {n.recipient}{n.address ? ` (${n.address})` : ''}{n.incidentNumber ? ` · ${n.incidentNumber}` : ''}
                       </span>
@@ -64,8 +64,8 @@ function Outgoing() {
                     </span>
                   </button>
                   {expanded && (
-                    <div className="border-t border-line bg-bg/60 px-5 py-3 pl-[60px]">
-                      <pre className="whitespace-pre-wrap break-words font-sans text-[13px] text-ink-2">{n.message}</pre>
+                    <div className="border-t border-line bg-bg/60 px-5 py-3 pl-[3.75rem]">
+                      <pre className="whitespace-pre-wrap break-words font-sans text-[0.8125rem] text-ink-2">{n.message}</pre>
                       {n.incidentNumber && <Link to={`/incidents/${n.incidentNumber}`} className="mt-2 inline-block text-xs font-medium text-accent-text hover:underline">Open {n.incidentNumber}</Link>}
                     </div>
                   )}
@@ -108,7 +108,7 @@ function Incoming() {
   ].filter(Boolean) as { label: string; mail: typeof mail }[]
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
+    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_23.75rem]">
       <Panel title="Received" description={log.data ? `Support mailbox: ${log.data.address}. ${log.data.enabled ? 'Provider webhook is on.' : 'Provider webhook is off (no secret set); use the simulator.'}` : undefined} bodyClassName="p-0">
         {log.isLoading ? <Skeleton className="m-5 h-64" /> : !log.data?.emails.length ? (
           <EmptyState icon={<Inbox className="size-8" />} title="No e-mail received yet">Replies to notification e-mails appear here.</EmptyState>
@@ -117,14 +117,14 @@ function Incoming() {
             {log.data.emails.map((e) => (
               <li key={e.id} className="px-5 py-3">
                 <div className="flex items-baseline justify-between gap-3">
-                  <span className="min-w-0 truncate text-[13.5px] font-medium">{e.subject}</span>
+                  <span className="min-w-0 truncate text-[0.84375rem] font-medium">{e.subject}</span>
                   <span className={cn('shrink-0 text-xs font-medium', OUTCOME[e.outcome]?.tone)}>{OUTCOME[e.outcome]?.label ?? e.outcome}</span>
                 </div>
                 <p className="mt-0.5 text-xs text-muted">
                   From {e.from} · {when(e.receivedAt)}
                   {e.incidentNumber && <> · <Link to={`/incidents/${e.incidentNumber}`} className="tabular text-accent-text hover:underline">{e.incidentNumber}</Link></>}
                 </p>
-                {e.excerpt && <p className="mt-1 line-clamp-2 text-[13px] text-ink-2">{e.excerpt}</p>}
+                {e.excerpt && <p className="mt-1 line-clamp-2 text-[0.8125rem] text-ink-2">{e.excerpt}</p>}
                 {e.detail && <p className="mt-1 text-xs text-faint">{e.detail}</p>}
               </li>
             ))}

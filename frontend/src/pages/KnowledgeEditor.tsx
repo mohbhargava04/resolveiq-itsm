@@ -52,7 +52,7 @@ export default function KnowledgeEditor() {
 
   return (
     <div className="max-w-3xl">
-      <Link to={id ? `/kb/${id}` : '/kb'} className="mb-5 inline-flex items-center gap-1.5 text-[13px] text-muted hover:text-ink"><ArrowLeft className="size-4" /> Back</Link>
+      <Link to={id ? `/kb/${id}` : '/kb'} className="mb-5 inline-flex items-center gap-1.5 text-[0.8125rem] text-muted hover:text-ink"><ArrowLeft className="size-4" /> Back</Link>
       <PageHeader title={id ? 'Edit article' : 'New article'}
         description={fromIncident ? `Pre-filled from ${fromIncident}. Rewrite it in plain words for the person who will hit this problem next.` : 'Write for the person who has the problem, not for IT.'} />
       {!ready ? <Skeleton className="h-96" /> : (
@@ -90,7 +90,7 @@ export default function KnowledgeEditor() {
             </Field>
             <div className="flex items-center justify-between rounded-lg border border-line px-4 py-3">
               <div>
-                <p className="text-[13.5px] font-medium">Publish now</p>
+                <p className="text-[0.84375rem] font-medium">Publish now</p>
                 <p className="text-xs text-muted">Off saves a draft only IT staff can see.</p>
               </div>
               <Switch checked={form.publish} onChange={(v) => setForm({ ...form, publish: v })} label="Publish now" />

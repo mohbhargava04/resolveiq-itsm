@@ -25,6 +25,7 @@ answer `429` with `Retry-After` when exceeded. See [SECURITY.md](SECURITY.md).
 | GET | `/auth/me` | any | Current user |
 | PUT | `/auth/profile` · POST `/auth/profile/complete` | any | Edit profile · finish the first-sign-in profile step |
 | POST | `/auth/change-password` | any | Change password; other devices are signed out |
+| PUT | `/auth/preferences` | any | Save display settings `{theme, textSize, reduceMotion, easierReading, underlineLinks}`; returned in `/auth/me` as `display` |
 | GET | `/auth/sessions` · DELETE `/auth/sessions/{id}` · POST `/auth/sessions/revoke-others` | any | Where you're signed in; sign devices out |
 | GET | `/auth/mfa` · POST `/auth/mfa/setup` · `/enable` · `/disable` · `/recovery-codes` | any | Two-step verification: status, QR secret, turn on/off, new recovery codes |
 
@@ -57,6 +58,16 @@ answer `429` with `Retry-After` when exceeded. See [SECURITY.md](SECURITY.md).
 | GET | `/incidents/{number}/recommendations` | team lead+ | Ranked technicians with reasons (`?strategy=`) |
 | GET | `/incidents/{number}/sla-risk` | technician+ | Predicted risk and factors |
 | POST | `/incidents/bulk` | team lead+ | `{numbers[], action: ASSIGN|LINK_TO_MAJOR|MARK_DUPLICATE|RESOLVE|CLOSE, params{}}`; per-item results |
+
+## Report with assistant (chatbot)
+
+| Method | Path | Who | Purpose |
+|---|---|---|---|
+| POST | `/assistant/sessions` | any | Start a conversation → `AssistantReply` (greeting + first question) |
+| POST | `/assistant/sessions/{id}/messages` | owner | `{text?, choice?}` → next `AssistantReply`. `choice` is an option's `value`; `RESTART` and `CANCEL` work at every step |
+| GET | `/assistant/sessions/{id}` | owner | Transcript and outcome |
+
+`AssistantReply = {sessionId, step, done, outcome, messages[], prompt{text, options[], allowText, articles[], incidents[], major, summary}, incidentNumber, articleId}`. Outcomes: `INCIDENT_CREATED`, `DEFLECTED`, `JOINED_MAJOR_INCIDENT`, `DUPLICATE_AVOIDED`, `CANCELLED`. Someone else's conversation → 403, even for administrators.
 
 ## Attachments
 

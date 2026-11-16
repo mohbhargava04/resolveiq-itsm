@@ -74,7 +74,7 @@ export function ArticleCard({ a, staff, compact }: { a: ArticleSummary; staff?: 
           <span className="mt-0.5 inline-flex size-7 shrink-0 items-center justify-center rounded-md bg-accent-soft text-accent-text"><Lightbulb className="size-4" aria-hidden /></span>
           <div className="min-w-0 flex-1">
             <p className="font-medium leading-snug group-hover:text-accent-text">{a.title}</p>
-            {!compact && <p className="mt-1 line-clamp-2 text-[13px] text-muted">{a.excerpt}</p>}
+            {!compact && <p className="mt-1 line-clamp-2 text-[0.8125rem] text-muted">{a.excerpt}</p>}
             <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-faint">
               {a.service && <span>{a.service.name}</span>}
               <span className="inline-flex items-center gap-1"><Eye className="size-3" aria-hidden />{a.views}</span>

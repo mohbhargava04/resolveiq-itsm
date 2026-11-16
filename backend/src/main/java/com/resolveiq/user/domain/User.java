@@ -3,6 +3,7 @@ package com.resolveiq.user.domain;
 import com.resolveiq.common.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.DiscriminatorColumn;
+import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Inheritance;
 import jakarta.persistence.InheritanceType;
@@ -95,6 +96,10 @@ public abstract class User extends BaseEntity {
     @Column(name = "mfa_last_used_step")
     private Long mfaLastUsedStep;
 
+    /** Theme, text size and reading aids; follows the person to any device. */
+    @Embedded
+    private DisplayPreferences displayPreferences = DisplayPreferences.defaults();
+
     protected User() {
         // for JPA
     }
@@ -181,6 +186,10 @@ public abstract class User extends BaseEntity {
 
     public void markProfileIncomplete() {
         this.profileCompleted = false;
+    }
+
+    public void changeDisplayPreferences(DisplayPreferences preferences) {
+        this.displayPreferences = Objects.requireNonNull(preferences, "preferences");
     }
 
     public void changeAvatar(String url) {
@@ -302,6 +311,10 @@ public abstract class User extends BaseEntity {
 
     public String getAvatarUrl() {
         return avatarUrl;
+    }
+
+    public DisplayPreferences getDisplayPreferences() {
+        return displayPreferences == null ? DisplayPreferences.defaults() : displayPreferences;
     }
 
     public boolean isProfileCompleted() {

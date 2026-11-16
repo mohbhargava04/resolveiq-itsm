@@ -424,26 +424,27 @@ sequenceDiagram
 | **Inheritance** (genuine *is-a*) | `TeamLead` **is a** `Technician`; `ItManager` **is an** `Administrator`; every user **is a** `User`. All entities extend `BaseEntity` (identity, timestamps, optimistic locking). Inheritance is *not* used where *has-a* fits (e.g. SLA is composed, not inherited). |
 | **Polymorphism** | `user.getRole()`, `canHandleIncidents()` differ per subclass; any `PriorityStrategy` / `AssignmentStrategy` / `NotificationChannel` / `EscalationHandler` can be substituted at runtime. |
 | **Interfaces** | 11 contracts: `IncidentState`, `PriorityStrategy`, `AssignmentStrategy`, `IncidentObserver`, `NotificationChannel`, `EmailGateway`, `SmsGateway`, `CategoryClassifier`, `IdentityProvider`, `MalwareScanner`, plus Spring Data repository interfaces. |
-| **Composition** | `Incident` owns its `SlaRecord`, `Resolution`, `Feedback` (embedded) and `IncidentNote`s (cascade + orphan removal) — they cannot exist without it. |
+| **Composition** | `Incident` owns its `SlaRecord`, `Resolution`, `Feedback` (embedded) and `IncidentNote`s (cascade + orphan removal) — they cannot exist without it. `User` embeds its `DisplayPreferences` value object; `ChatSession` owns its `IncidentDraft` and append-only `ChatMessage` transcript. |
 | **Association / Aggregation** | `Incident → reporter`, `Incident → assignee` (association); `Incident → ItService/Category` (aggregation: shared, independent life cycle); `ItService ↔ ItService` dependency graph; `Technician → TeamLead`. |
 | **Exception handling** | 17 custom exceptions under `ItsmException`, each with an `ErrorCode` → HTTP status; one `GlobalExceptionHandler` produces RFC 7807 JSON. Database outages → 503, concurrent edits → 409 (optimistic locking). |
 | **Collections** | `EnumMap` (state registry, settings), `EnumSet` (allowed transitions, channels), `TreeSet` (sorted unique skills), `LinkedHashMap` (ordered reports), `CopyOnWriteArrayList` (thread-safe observer list), `ConcurrentHashMap` (live connections), `ArrayDeque` (BFS over the dependency graph), sparse `HashMap` vectors (TF-IDF). |
 | **Generics** | `SimilarityEngine.rank<T>(...)`, `PageResponse<T>`, repositories. |
 | **Modern Java** | Records for value objects and DTOs; **sealed interfaces** for events and for sign-in results (`SignedIn` / `MfaRequired`) with exhaustive pattern-matching `switch`; text blocks; `List.getFirst()` (Java 21). |
 
-## 7. Design patterns (9)
+## 7. Design patterns (10)
 
 | Pattern | Where | Why |
 |---|---|---|
 | **Strategy** | `PriorityStrategy` (2), `AssignmentStrategy` (5) | Algorithms are swapped at runtime from the admin settings without redeploying |
-| **State** | `IncidentState` + 9 state classes | Lifecycle rules live in one class per state; illegal transitions impossible. Week 3 added `resolveWithMajorIncident`, which only the active states allow |
+| **State** | `IncidentState` + 9 state classes; `ConversationState` + 9 assistant steps (see §10) | Lifecycle rules live in one class per state; illegal transitions impossible. Week 3 added `resolveWithMajorIncident`, which only the active states allow |
 | **Observer** | `IncidentEventPublisher` + 4 `IncidentObserver`s | Audit, notifications, live dashboard and ML retraining react to events without the incident knowing them. Major-incident events reach everyone through the same observers (banner, e-mail, audit) |
 | **Factory** | `UserFactory`, `IncidentFactory`, `NotificationChannelFactory` | Centralises construction (right subclass, hashed password, unique number, enabled channels) |
 | **Adapter** | `EmailGateway` ← `SmtpEmailGateway`/`ConsoleEmailGateway`; `SmsGateway` ← `TwilioSmsGateway`/`SimulatedSmsGateway`; `IdentityProvider` ← `GoogleIdentityProvider` (tests: a fake provider); `MalwareScanner` ← `SignatureMalwareScanner` | Third-party APIs plug in behind our own interface; simulation and real delivery are interchangeable, and tests never call Google |
 | **Chain of Responsibility** | `EscalationHandler` chain | Team Lead → System Admin → IT Manager; add a level by adding a handler |
 | **Template Method** | `AbstractAssignmentStrategy.rank()`, `AbstractNotificationChannel.deliver()` | Fixed algorithm skeleton, subclasses supply only the varying step |
 | **Repository** | Spring Data repositories | Domain asks for data by intent; persistence technology is replaceable |
-| **Builder** | `AuditRecord.builder()` | Readable construction of records with many optional fields |
+| **Builder** | `AuditRecord.builder()`, `Prompt.ask(...)` | Readable construction of objects with many optional parts |
+| **Facade** | `DraftInsight` | One simple entry for the assistant to the classifier, duplicate detector, knowledge base and major incidents — no rule is duplicated |
 
 ## 8. Extensibility checklist (what changes for common requirements)
 
@@ -460,6 +461,8 @@ sequenceDiagram
 | Sign in with Microsoft / Okta | One `IdentityProvider` adapter; the sign-in rules (domains, roles, account linking) are reused |
 | Real antivirus (ClamAV, cloud scanner) | One `MalwareScanner` adapter |
 | New bulk action | One enum value + one case in `BulkActionService` |
+| New question in the assistant | One `ConversationState` class + one `ConversationStep` value (auto-registered; ordering is the enum order) |
+| New colour theme | One CSS variable block in `index.css` + one `ThemeChoice` value; `check-contrast.mjs` verifies it |
 
 ## 9. Security design
 
@@ -501,3 +504,57 @@ sequenceDiagram
     S-->>B: new access token + new cookie
     Note over S: an old token presented again = theft → whole family revoked
 ```
+
+## 10. Report with assistant (chatbot) — State pattern for a conversation
+
+```mermaid
+classDiagram
+  class ChatbotService { +start(User) AssistantReply +reply(id, User, UserInput) AssistantReply }
+  class ConversationStates { +of(step) ConversationState +next(ChatSession) ConversationState }
+  class ConversationState { <<interface>> +step() +applies(ChatSession) bool +prompt(ChatSession) Prompt +handle(ChatSession, UserInput) StepResult }
+  class AbstractConversationState { <<abstract>> +handle() final #answer() }
+  class ChatSession { -step -outcome -draft: IncidentDraft -messages: List~ChatMessage~ +say() +moveTo() +finishWithIncident() +finishDeflected() +cancel() }
+  class IncidentDraft { <<embeddable>> +describe() +chooseService() +forgetService() +rateImpact() }
+  class DraftInsight { <<facade>> +relatedMajorIncidents() +selfHelp() +likelyDuplicates() +category() }
+  ChatbotService --> ConversationStates
+  ChatbotService --> ChatSession
+  ConversationStates o-- ConversationState
+  ConversationState <|.. AbstractConversationState
+  AbstractConversationState <|-- DescribeProblemState
+  AbstractConversationState <|-- ConfirmServiceState
+  AbstractConversationState <|-- MajorIncidentState
+  AbstractConversationState <|-- SelfHelpState
+  AbstractConversationState <|-- DuplicateWarningState
+  AbstractConversationState <|-- AskImpactState
+  AbstractConversationState <|-- AskUrgencyState
+  AbstractConversationState <|-- AskDeviceState
+  AbstractConversationState <|-- ConfirmSummaryState
+  ChatSession *-- IncidentDraft
+  ChatSession *-- ChatMessage
+  ConfirmSummaryState --> IncidentService : report()
+  DraftInsight --> CategoryClassifier
+  DraftInsight --> DuplicateDetector
+  DraftInsight --> KnowledgeService
+```
+
+- **Context and states.** `ChatSession` stores the current `ConversationStep`; the matching state object decides what to ask
+  (`prompt`) and what an answer means (`handle`). States are stateless singletons, so one set serves every user.
+- **"Ask only what is missing".** States never name each other. After every answer the registry picks the *first step that
+  still applies*, in enum order (`DESCRIBE_PROBLEM → CONFIRM_SERVICE → OFFER_MAJOR_INCIDENT → OFFER_SELF_HELP → WARN_DUPLICATE →
+  ASK_IMPACT → ASK_URGENCY → ASK_DEVICE → CONFIRM_SUMMARY`). Hints in the first description ("my whole team", "asap", "my laptop")
+  fill the draft, so those steps no longer apply. Changing the service from the summary re-opens the checks that depend on it.
+- **No second pipeline.** `ConfirmSummaryState` calls `IncidentService.report(...)` — the same call as the form — so
+  classification, priority, SLA, assignment, notifications and audit apply unchanged; it adds one `REPORTED_VIA_ASSISTANT` audit line.
+  Deflections go through `KnowledgeService.recordDeflection`, joins through `IncidentService.reportAffected`.
+- **Deterministic and testable.** Rules (`AnswerInterpreter`, `ServiceMatcher`: 0.6 × catalogue wording + 0.4 × k-NN vote of similar
+  past incidents) plus the existing Naive Bayes and TF-IDF engines. No external AI key; every path is covered by AST-01–13.
+- **Voice.** The browser's Web Speech API turns speech into text in the page (`useDictation`); the server only ever receives text.
+  `Permissions-Policy` allows the microphone for this site only.
+
+## 11. Display & accessibility settings
+
+`DisplayPreferences` is an immutable value object embedded in `users` (migration `V3`), exposed in `/auth/me` and saved with
+`PUT /auth/preferences`. The browser keeps a copy in `localStorage` so `public/theme-init.js` (external file — the CSP forbids inline
+scripts) applies theme, text size and reading aids **before first paint**; `DisplayAccountSync` reconciles device and account after
+sign-in. Every font and layout size is in `rem` (converted by `scripts/px-to-rem.mjs`), so one root font-size change scales the UI.
+Themes are CSS-variable blocks; `scripts/check-contrast.mjs` proves AA for every theme and AAA (7:1) for High contrast.

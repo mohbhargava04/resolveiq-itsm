@@ -93,7 +93,7 @@ public class SecurityConfig {
                         .referrerPolicy(r -> r.policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
                         .contentSecurityPolicy(csp -> csp.policyDirectives(CSP))
                         .addHeaderWriter(new StaticHeadersWriter("Permissions-Policy",
-                                "camera=(), microphone=(), geolocation=(), payment=(), usb=()"))
+                                "camera=(), microphone=(self), geolocation=(), payment=(), usb=()"))
                         .addHeaderWriter(new StaticHeadersWriter("Cross-Origin-Opener-Policy", "same-origin"))
                         .addHeaderWriter(new StaticHeadersWriter("Cross-Origin-Resource-Policy", "same-origin")))
                 .authorizeHttpRequests(auth -> {

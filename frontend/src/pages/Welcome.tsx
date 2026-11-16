@@ -48,7 +48,7 @@ export default function Welcome() {
         <Avatar name={user.fullName} src={user.avatarUrl} size={48} />
         <div className="min-w-0 flex-1">
           <p className="truncate font-medium">{user.email}</p>
-          <p className="mt-0.5 flex items-center gap-1.5 text-[13px] text-muted">
+          <p className="mt-0.5 flex items-center gap-1.5 text-[0.8125rem] text-muted">
             <BadgeCheck className="size-4 text-accent-text" aria-hidden />
             Access level: <span className="font-medium text-ink-2">{ROLE_LABEL[user.role]}</span>
           </p>

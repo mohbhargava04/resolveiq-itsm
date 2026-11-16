@@ -89,7 +89,7 @@ export default function Incidents() {
 
       <div className="mb-4 space-y-3">
         <div className="flex flex-wrap items-center gap-2">
-          <div className="relative min-w-[220px] flex-1">
+          <div className="relative min-w-[13.75rem] flex-1">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-faint" />
             <Input aria-label="Search" value={get('q')} onChange={(e) => set('q', e.target.value)} placeholder="Search number, title or description" className="pl-9" />
           </div>
@@ -117,33 +117,33 @@ export default function Incidents() {
               </button>
             ))}
           </div>
-          <Select aria-label="SLA" value={get('sla')} onChange={(e) => set('sla', e.target.value)} className="h-8 w-auto text-[13px]">
+          <Select aria-label="SLA" value={get('sla')} onChange={(e) => set('sla', e.target.value)} className="h-8 w-auto text-[0.8125rem]">
             <option value="">Any SLA state</option>
             {SLA.map((s) => <option key={s} value={s}>{SLA_LABEL[s]}</option>)}
           </Select>
           {staff && (
-            <label className="flex h-8 cursor-pointer items-center gap-2 rounded-lg border border-line bg-surface px-2.5 text-[13px] text-ink-2">
+            <label className="flex h-8 cursor-pointer items-center gap-2 rounded-lg border border-line bg-surface px-2.5 text-[0.8125rem] text-ink-2">
               <input type="checkbox" checked={get('mine') === '1'} onChange={(e) => set('mine', e.target.checked ? '1' : null)} className="accent-[var(--accent)]" />
               Assigned to me
             </label>
           )}
           {is('TEAM_LEAD') && (
-            <Select aria-label="Technician" value={get('assignee')} onChange={(e) => set('assignee', e.target.value)} className="h-8 w-auto text-[13px]">
+            <Select aria-label="Technician" value={get('assignee')} onChange={(e) => set('assignee', e.target.value)} className="h-8 w-auto text-[0.8125rem]">
               <option value="">Any technician</option>
               {technicians.data?.map((t) => <option key={t.id} value={t.id}>{t.fullName}</option>)}
             </Select>
           )}
           {staff && (
-            <label className="flex h-8 cursor-pointer items-center gap-2 rounded-lg border border-line bg-surface px-2.5 text-[13px] text-ink-2">
+            <label className="flex h-8 cursor-pointer items-center gap-2 rounded-lg border border-line bg-surface px-2.5 text-[0.8125rem] text-ink-2">
               <input type="checkbox" checked={get('escalated') === '1'} onChange={(e) => set('escalated', e.target.checked ? '1' : null)} className="accent-[var(--accent)]" />
               Escalated
             </label>
           )}
-          <div className="flex items-center gap-1.5 text-[13px] text-muted">
+          <div className="flex items-center gap-1.5 text-[0.8125rem] text-muted">
             <span>From</span>
-            <Input type="date" aria-label="Reported from" value={get('from')} onChange={(e) => set('from', e.target.value)} className="h-8 w-auto text-[13px]" />
+            <Input type="date" aria-label="Reported from" value={get('from')} onChange={(e) => set('from', e.target.value)} className="h-8 w-auto text-[0.8125rem]" />
             <span>to</span>
-            <Input type="date" aria-label="Reported to" value={get('to')} onChange={(e) => set('to', e.target.value)} className="h-8 w-auto text-[13px]" />
+            <Input type="date" aria-label="Reported to" value={get('to')} onChange={(e) => set('to', e.target.value)} className="h-8 w-auto text-[0.8125rem]" />
           </div>
           {activeFilters > 0 && (
             <Button size="sm" variant="ghost" icon={<X className="size-3.5" />} onClick={() => setParams({}, { replace: true })}>Clear filters</Button>
@@ -152,7 +152,7 @@ export default function Incidents() {
             <Select aria-label="Sort" value={`${query.sort}:${query.direction}`} onChange={(e) => {
               const [s, d] = e.target.value.split(':')
               const next = new URLSearchParams(params); next.set('sort', s!); next.set('dir', d!); setParams(next, { replace: true })
-            }} className="h-8 w-auto text-[13px]">
+            }} className="h-8 w-auto text-[0.8125rem]">
               <option value="createdAt:desc">Newest first</option>
               <option value="createdAt:asc">Oldest first</option>
               <option value="priority:asc">Most urgent first</option>
@@ -193,7 +193,7 @@ export default function Incidents() {
       {lead && selected.size > 0 && <BulkBar selected={[...selected]} onClear={() => setSelected(new Set())} />}
 
       {data && data.totalItems > 0 && (
-        <div className="mt-3 flex items-center justify-between text-[13px] text-muted">
+        <div className="mt-3 flex items-center justify-between text-[0.8125rem] text-muted">
           <span className="tabular">
             {data.page * data.size + 1}–{Math.min((data.page + 1) * data.size, data.totalItems)} of {data.totalItems}
           </span>

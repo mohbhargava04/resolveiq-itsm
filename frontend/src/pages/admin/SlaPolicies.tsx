@@ -15,7 +15,7 @@ export default function SlaPolicies() {
   const specific = policies.data?.filter((p) => p.serviceCode) ?? []
 
   const table = (rows: SlaPolicyView[]) => (
-    <table className="w-full text-[13px]">
+    <table className="w-full text-[0.8125rem]">
       <thead className="text-left text-xs text-muted">
         <tr>
           <th className="pb-2 font-medium">Priority</th>
@@ -44,7 +44,7 @@ export default function SlaPolicies() {
       <PageHeader title="SLA policies" description="A service-specific policy overrides the default for the same priority. Edits apply to new and re-prioritised incidents; deadlines already running keep the targets they started with."
         actions={<Button variant="primary" icon={<Plus className="size-4" />} onClick={() => setEditing('new')}>Add service policy</Button>} />
       <Panel title="Organisation defaults">{policies.isLoading ? <Skeleton className="h-40" /> : table(defaults)}</Panel>
-      <Panel title="Service-specific agreements">{policies.isLoading ? <Skeleton className="h-28" /> : specific.length ? table(specific) : <p className="text-[13px] text-muted">None yet.</p>}</Panel>
+      <Panel title="Service-specific agreements">{policies.isLoading ? <Skeleton className="h-28" /> : specific.length ? table(specific) : <p className="text-[0.8125rem] text-muted">None yet.</p>}</Panel>
       {editing && <PolicyDialog policy={editing === 'new' ? null : editing} onClose={() => setEditing(null)} />}
     </div>
   )
@@ -98,7 +98,7 @@ function PolicyDialog({ policy, onClose }: { policy: SlaPolicyView | null; onClo
           <Field label="Warn at (%)"><Input type="number" min={10} max={95} value={f.warningThresholdPercent} onChange={(e) => setF({ ...f, warningThresholdPercent: e.target.value })} /></Field>
         </div>
         {policy?.serviceCode && (
-          <label className="flex items-center justify-between rounded-lg border border-line px-3 py-2 text-[13px]">
+          <label className="flex items-center justify-between rounded-lg border border-line px-3 py-2 text-[0.8125rem]">
             <span>Active</span><Switch checked={f.active} onChange={(v) => setF({ ...f, active: v })} label="Active" />
           </label>
         )}

@@ -57,7 +57,7 @@ export default function ResetPassword() {
           <Button type="submit" variant="primary" className="w-full" loading={busy}>Change password</Button>
         </form>
       )}
-      <p className="mt-6 text-[13px] text-muted">
+      <p className="mt-6 text-[0.8125rem] text-muted">
         <Link to="/forgot-password" className="font-medium text-accent-text hover:underline">Ask for a new link</Link>
       </p>
     </AuthLayout>

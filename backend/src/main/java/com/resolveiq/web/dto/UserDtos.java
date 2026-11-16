@@ -1,8 +1,11 @@
 package com.resolveiq.web.dto;
 
+import com.resolveiq.user.domain.DisplayPreferences;
 import com.resolveiq.user.domain.ExperienceLevel;
 import com.resolveiq.user.domain.Role;
 import com.resolveiq.user.domain.Technician;
+import com.resolveiq.user.domain.TextSize;
+import com.resolveiq.user.domain.ThemeChoice;
 import com.resolveiq.user.domain.User;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Max;
@@ -62,6 +65,21 @@ public final class UserDtos {
                                  Set<@Size(max = 40) String> skills) {
     }
 
+    /** Display and accessibility settings; doubles as the response shape inside {@link UserView}. */
+    public record DisplayPreferencesDto(@NotNull(message = "Choose a theme") ThemeChoice theme,
+                                        @NotNull(message = "Choose a text size") TextSize textSize,
+                                        boolean reduceMotion, boolean easierReading, boolean underlineLinks) {
+
+        public static DisplayPreferencesDto of(DisplayPreferences p) {
+            return new DisplayPreferencesDto(p.getTheme(), p.getTextSize(), p.isReduceMotion(), p.isEasierReading(),
+                    p.isUnderlineLinks());
+        }
+
+        public DisplayPreferences toDomain() {
+            return new DisplayPreferences(theme, textSize, reduceMotion, easierReading, underlineLinks);
+        }
+    }
+
     public record ChangeRoleRequest(@NotNull Role role, Set<String> skills, ExperienceLevel experienceLevel,
                                     @Min(1) @Max(50) Integer maxActiveIncidents) {
     }
@@ -100,7 +118,8 @@ public final class UserDtos {
     public record UserView(Long id, String fullName, String email, String role, String roleLabel, String initials,
                            String phone, String department, String location, String avatarUrl, boolean active,
                            Instant lastLoginAt, boolean profileCompleted, boolean passwordEnabled, boolean googleLinked,
-                           boolean mfaEnabled, Instant lockedUntil, TechnicianInfo technician) {
+                           boolean mfaEnabled, Instant lockedUntil, TechnicianInfo technician,
+                           DisplayPreferencesDto display) {
 
         public static UserView of(User u) {
             return of(u, null);
@@ -117,7 +136,8 @@ public final class UserDtos {
             return new UserView(u.getId(), u.getFullName(), u.getEmail(), u.getRole().name(),
                     u.getRole().displayName(), u.getInitials(), u.getPhone(), u.getDepartment(), u.getLocation(),
                     u.getAvatarUrl(), u.isActive(), u.getLastLoginAt(), u.isProfileCompleted(), u.isPasswordEnabled(),
-                    u.getGoogleSubject() != null, u.isMfaEnabled(), u.getLockedUntil(), info);
+                    u.getGoogleSubject() != null, u.isMfaEnabled(), u.getLockedUntil(), info,
+                    DisplayPreferencesDto.of(u.getDisplayPreferences()));
         }
     }
 

@@ -52,7 +52,7 @@ export default function Settings() {
           </Panel>
           <Panel title="SLA monitor" description={`Checks every active incident every 30 seconds. Notifications go out by ${s.notificationChannels.map((c) => c === 'IN_APP' ? 'in-app' : c === 'EMAIL' ? 'email' : 'SMS').join(', ')}.`}
             action={<Button size="sm" icon={<Play className="size-3.5" />} loading={monitor.isPending} onClick={() => monitor.mutate()}>Run now</Button>}>
-            <p className="text-[13px] text-muted">Running it manually is useful in a demo, so you don't have to wait for the next scheduled check.</p>
+            <p className="text-[0.8125rem] text-muted">Running it manually is useful in a demo, so you don't have to wait for the next scheduled check.</p>
           </Panel>
         </>
       )}
@@ -69,7 +69,7 @@ function DomainsField({ value, onSave, busy }: { value: string; onSave: (v: stri
         hint="Only these addresses can sign in with Google or register. Sub-domains are included. Empty allows any domain.">
         <Input id="domains" value={text} onChange={(e) => setText(e.target.value)} placeholder="resolveiq.test, hyderabad.bits-pilani.ac.in" />
       </Field>
-      <Button type="submit" loading={busy} className="mb-[38px]">Save domains</Button>
+      <Button type="submit" loading={busy} className="mb-[2.375rem]">Save domains</Button>
     </form>
   )
 }
@@ -82,7 +82,7 @@ function StrategyChoice({ items, onPick, busy }: { items: StrategyView[]; onPick
           className={cn('rounded-lg border px-4 py-3 text-left transition-colors cursor-pointer disabled:cursor-default',
             it.active ? 'border-accent bg-accent-soft' : 'border-line hover:bg-surface-2')}>
           <span className="flex items-center justify-between gap-2">
-            <span className="text-[13.5px] font-medium">{it.name}</span>
+            <span className="text-[0.84375rem] font-medium">{it.name}</span>
             <span className={cn('size-3.5 rounded-full border-2', it.active ? 'border-accent bg-accent shadow-[inset_0_0_0_2px_var(--surface)]' : 'border-line-strong')} />
           </span>
           <span className="mt-1 block text-xs text-muted">{it.description}</span>
@@ -96,7 +96,7 @@ function Toggle({ title, desc, value, onChange }: { title: string; desc: string;
   return (
     <li className="flex items-center justify-between gap-4 py-3">
       <span>
-        <span className="block text-[13.5px] font-medium">{title}</span>
+        <span className="block text-[0.84375rem] font-medium">{title}</span>
         <span className="block text-xs text-muted">{desc}</span>
       </span>
       <Switch checked={value} onChange={onChange} label={title} />

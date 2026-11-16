@@ -38,7 +38,7 @@ owns one module below: read its files, run its tests, and be ready to explain th
 - **Talking points:** ER design and single-table inheritance; Flyway migrations V1 → V2; access token + rotating
   refresh cookie and why (SECURITY.md); token version for instant revocation; Google sign-in with PKCE and
   company domains; TOTP built from RFC 6238; rate limiting before Spring Security; safe uploads; OWASP Top 10:2025
-  mapping; 129 backend tests on H2 and PostgreSQL; CI, CodeQL, Dependabot; Docker and Render.
+  mapping; 147 backend tests on H2 and PostgreSQL; CI, CodeQL, Dependabot; Docker and Render.
 
 ## Demo script (15–20 minutes)
 
@@ -65,18 +65,25 @@ Before recording: `ITSM_RESET_DEMO=true ./mvnw spring-boot:run` so the live scen
    incident**: the related reports are linked and a red banner appears for everyone. Post an update
    (*Cause identified*). As **Ava**, see the banner and press **I'm affected too**. Resolve the major incident:
    every linked incident resolves with it.
-6. **Self-help and e-mail** (Member 3) — as Ava, start reporting "account locked after password change": a
+6. **Report with assistant + voice** (Member 3) — as Ava, open **Report with assistant**, press the microphone and say
+   "The campus Wi-Fi keeps dropping on my laptop, my whole team is affected". Show that it guesses the service, offers a
+   guide inline, then skips impact and device because they were already said. Confirm the summary (expected P-level and SLA)
+   and open the created incident: same auto-classification, assignment and audit (`REPORTED_VIA_ASSISTANT`) as the form.
+   Then start a new conversation about the declared major incident's service and press **I'm affected too**.
+7. **Self-help and e-mail** (Member 3) — as Ava, start reporting "account locked after password change": a
    knowledge article appears; open it and click **This fixed it** (no ticket created; *Solved by self-help* goes
    up). As admin, **E-mail & SMS → Received e-mail → Simulate**: a reply tagged `[INC-…]` answers a technician's
    question and restarts the SLA.
-7. **Security** (Member 4) — as admin, **Profile & security**: turn on two-step verification by scanning the QR
+8. **Security** (Member 4) — as admin, **Profile & security**: turn on two-step verification by scanning the QR
    code, sign out, sign in again with the code. Show *where you're signed in*. **Admin → Security** overview.
    Briefly show SECURITY.md's OWASP table and a security test.
-8. **Administration** (Member 4) — switch assignment strategy to Load-based; add a new category "IoT Devices"
+9. **Display & accessibility** (Member 3) — theme menu → *Display & accessibility*: switch to High contrast and
+   Extra-large text (whole layout scales), Warm paper, Reduce motion. Sign in on another browser: the settings follow the account.
+10. **Administration** (Member 4) — switch assignment strategy to Load-based; add a new category "IoT Devices"
    and show the classifier recognising it immediately; change a user's role; CSV import; allowed domains.
-9. **Engineering** (Member 4) — `./mvnw test` (129) and `npm test` (16) passing, CI and CodeQL on GitHub,
+11. **Engineering** (Member 4) — `./mvnw test` (147) and `npm test` (23) passing, CI and CodeQL on GitHub,
    Docker Compose with PostgreSQL, the deployed Render link.
-10. **Manager reports** — KPIs (MTTA, MTTR, SLA compliance, CSAT), self-help report, workload, trends, CSV export.
+12. **Manager reports** — KPIs (MTTA, MTTR, SLA compliance, CSAT), self-help report, workload, trends, CSV export.
 
 ## Roadmap to the 22 November deadline
 
@@ -85,7 +92,7 @@ Before recording: `ITSM_RESET_DEMO=true ./mvnw spring-boot:run` so the live scen
 | 1 | 23–29 Oct | Backend: domain, patterns, security, SLA, escalation, 7 intelligent features, 80 tests, docs | **Done** |
 | 2 | 29 Oct–5 Nov | Frontend: design system, light/dark themes, login, employee portal, technician workbench, command centre, service map, reports, all admin screens, live notifications, ⌘K | **Done** |
 | 3 | 3–12 Nov | Security hardening (rotating sessions, Google sign-in, 2FA, password reset, rate limiting, strict CSP, CodeQL/Dependabot, OWASP write-up); knowledge base & self-help, major incidents, attachments, conversation, two-way e-mail, bulk actions, profile & sessions, admin security; new sign-in page; accessibility pass (0 axe violations); frontend tests; Docker + Render deployment | **Done** |
-| 4 | 13–19 Nov | Innovation extras (LLM adapter for classification/resolutions, chatbot/voice reporting), deploy to Render, polish from team feedback | Next |
+| 4 | 13–19 Nov | Display & accessibility settings (6 themes, text size, reading aids); chatbot + voice reporting; deploy to Render; polish | Chatbot, voice, accessibility **done**; Render next |
 | — | 19–22 Nov | PDF report (assembled from these docs), screenshots, video recording, upload | |
 
 ## Git workflow

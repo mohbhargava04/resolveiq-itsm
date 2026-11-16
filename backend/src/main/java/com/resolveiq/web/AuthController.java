@@ -21,6 +21,7 @@ import com.resolveiq.user.domain.User;
 import com.resolveiq.web.dto.CommonDtos.Message;
 import com.resolveiq.web.dto.UserDtos.AuthResponse;
 import com.resolveiq.web.dto.UserDtos.ChangePasswordRequest;
+import com.resolveiq.web.dto.UserDtos.DisplayPreferencesDto;
 import com.resolveiq.web.dto.UserDtos.ForgotPasswordRequest;
 import com.resolveiq.web.dto.UserDtos.LoginRequest;
 import com.resolveiq.web.dto.UserDtos.MfaCodeRequest;
@@ -284,6 +285,13 @@ public class AuthController {
     public UserView completeProfile(@Valid @RequestBody ProfileRequest r) {
         return UserView.of(profiles.update(currentUser.require(), r.fullName(), r.phone(), r.department(), r.location(),
                 r.skills(), true));
+    }
+
+    @PutMapping("/preferences")
+    @Transactional
+    @Operation(summary = "Save your display and accessibility settings (theme, text size, reading aids)")
+    public UserView updatePreferences(@Valid @RequestBody DisplayPreferencesDto r) {
+        return UserView.of(profiles.updateDisplayPreferences(currentUser.require(), r.toDomain()));
     }
 
     // ---- helpers -----------------------------------------------------------------------------------

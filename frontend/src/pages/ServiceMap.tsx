@@ -53,13 +53,15 @@ export default function ServiceMap() {
       <Panel bodyClassName="p-0">
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-b border-line px-5 py-3 text-xs text-muted">
           <span className="flex items-center gap-1.5"><span className="size-2.5 rounded-sm border border-line-strong bg-surface" />Healthy</span>
-          <span className="flex items-center gap-1.5"><span className="size-2.5 rounded-sm bg-p2" />Open incidents</span>
-          <span className="flex items-center gap-1.5"><span className="size-2.5 rounded-sm border-2 border-p1" />Probable common cause</span>
+          <span className="flex items-center gap-1.5"><span className="flex size-3.5 items-center justify-center rounded-full bg-p2 text-[0.5625rem] font-semibold text-p2-ink">2</span>Open incidents (number shown)</span>
+          <span className="flex items-center gap-1.5"><span className="size-2.5 rounded-sm border-2 border-dashed border-p1" />Probable common cause (dashed outline)</span>
           <span className="ml-auto">Foundations on the left, the services people use on the right</span>
         </div>
         {!layout ? <Skeleton className="m-5 h-96" /> : (
           <div className="overflow-x-auto">
-            <svg width={layout.width} height={layout.height} className="block" role="img" aria-label="Service dependency graph">
+            {/* sized in rem with a viewBox, so the drawing scales with the Text size setting */}
+            <svg viewBox={`0 0 ${layout.width} ${layout.height}`} className="block max-w-none" role="group" aria-label="Service dependency graph"
+              style={{ width: `${layout.width / 16}rem`, height: `${layout.height / 16}rem` }}>
               <defs>
                 <marker id="arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
                   <path d="M0,0 L8,4 L0,8 z" fill="var(--line-strong)" />
@@ -83,20 +85,24 @@ export default function ServiceMap() {
                 const open = n.openIncidents > 0
                 const root = roots.has(n.code)
                 const dim = related && !related.has(n.code)
+                const sub = root ? 'Probable cause' : `${LEVEL_LABEL[n.criticality]} criticality`
+                const open_ = () => navigate(`/incidents?service=${n.code}&status=OPEN`)
                 return (
                   <g key={n.code} transform={`translate(${p.x},${p.y})`} opacity={dim ? 0.3 : 1}
                     onMouseEnter={() => setHover(n.code)} onMouseLeave={() => setHover(null)}
-                    onClick={() => navigate(`/incidents?service=${n.code}&status=OPEN`)}
-                    className="cursor-pointer" role="link" aria-label={`${n.name}, ${n.openIncidents} open incidents`}>
+                    onFocus={() => setHover(n.code)} onBlur={() => setHover(null)}
+                    onClick={open_} onKeyDown={(e) => { if (e.key === 'Enter') open_() }} tabIndex={0}
+                    className="cursor-pointer" role="link"
+                    aria-label={`${truncate(n.name, 22)} ${sub}${open ? ` ${n.openIncidents} open incidents` : ', no open incidents'}`}>
                     <rect width={NODE_W} height={NODE_H} rx={10}
                       fill={open ? 'var(--p2-soft)' : 'var(--surface)'}
-                      stroke={root ? 'var(--p1)' : open ? 'var(--p2)' : 'var(--line-strong)'} strokeWidth={root ? 2 : 1} />
-                    <text x={12} y={23} className="fill-[var(--ink)] text-[12.5px] font-semibold">{truncate(n.name, 22)}</text>
-                    <text x={12} y={41} className="fill-[var(--muted)] text-[11px]">{LEVEL_LABEL[n.criticality]} criticality</text>
+                      stroke={root ? 'var(--p1)' : open ? 'var(--p2)' : 'var(--line-strong)'} strokeWidth={root ? 2 : 1} strokeDasharray={root ? '6 3' : undefined} />
+                    <text x={12} y={23} className="fill-[var(--ink)] text-[12.5px] font-semibold">{truncate(n.name, 22)}{' '}</text>
+                    <text x={12} y={41} className={cn('text-[11px]', root ? 'fill-[var(--p1)] font-semibold' : 'fill-[var(--muted)]')}>{sub}{' '}</text>
                     {open && (
                       <g transform={`translate(${NODE_W - 30},${NODE_H / 2 - 11})`}>
                         <rect width={22} height={22} rx={11} fill="var(--p2)" />
-                        <text x={11} y={15} textAnchor="middle" className="fill-white text-[11px] font-semibold">{n.openIncidents}</text>
+                        <text x={11} y={15} textAnchor="middle" className="fill-[var(--p2-ink)] text-[11px] font-semibold">{n.openIncidents}</text>
                       </g>
                     )}
                   </g>
@@ -108,7 +114,7 @@ export default function ServiceMap() {
       </Panel>
 
       {correlations.data && correlations.data.length > 0 && (
-        <p className={cn('mt-3 text-[13px] text-muted')}>
+        <p className={cn('mt-3 text-[0.8125rem] text-muted')}>
           {correlations.data.map((c) => c.summary).join(' ')}
         </p>
       )}

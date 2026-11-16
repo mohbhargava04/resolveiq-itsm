@@ -4,6 +4,8 @@ package com.resolveiq.audit;
 public enum AuditAction {
     // incident lifecycle
     INCIDENT_CREATED,
+    /** The incident was reported through the conversational assistant rather than the form. */
+    REPORTED_VIA_ASSISTANT,
     INCIDENT_CLASSIFIED,
     PRIORITY_CALCULATED,
     PRIORITY_CHANGED,
