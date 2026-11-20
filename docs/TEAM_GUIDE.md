@@ -5,7 +5,7 @@ owns one module below: read its files, run its tests, and be ready to explain th
 
 ## Module ownership
 
-### Member 1 — Domain model, lifecycle & OOP design
+### Member 1: Moh Bhargava — Domain model, lifecycle & OOP design
 - **Files:** `incident/domain/*` (`Incident`, `IncidentState`, `AbstractIncidentState`, `IncidentStates`),
   `user/domain/*`, `common/BaseEntity`, `common/exception/*`
 - **Tests:** `IncidentLifecycleTest`, `UserAndCatalogRulesTest`
@@ -13,14 +13,14 @@ owns one module below: read its files, run its tests, and be ready to explain th
   pattern makes `NEW → CLOSED` impossible; composition (SLA record, notes) vs association (reporter, service);
   the custom exception hierarchy and how it becomes HTTP errors; domain events.
 
-### Member 2 — Priority, SLA, assignment & escalation
+### Member 2: Arnav Mhatre — Priority, SLA, assignment & escalation
 - **Files:** `priority/*`, `sla/*`, `assignment/*`, `escalation/*`
 - **Tests:** `PriorityStrategyTest`, `SlaRecordTest`, `AssignmentStrategyTest`, `EscalationChainTest`
 - **Talking points:** the priority formula and thresholds (ALGORITHMS.md §1); Strategy pattern and switching
   strategies at runtime; Template Method in `AbstractAssignmentStrategy`; SLA pause and the 30-second monitor;
   Chain of Responsibility for escalation.
 
-### Member 3 — Intelligent features, notifications & frontend
+### Member 3: Dheer Mayur Thakkar — Intelligent features, notifications & frontend
 - **Files:** `intelligence/*`, `notification/*` (Observer, Factory, Adapter), `live/*`, `frontend/` (see `docs/DESIGN.md`)
 - **Also:** `knowledge/*` (self-help deflection), `notification/inbound/*` (two-way e-mail), the major-incident
   and conversation screens, accessibility
@@ -30,7 +30,7 @@ owns one module below: read its files, run its tests, and be ready to explain th
   over the dependency graph; predictive SLA risk; the Observer → Policy → Factory → Channel → Adapter chain for
   notifications; SSE live updates; three role-specific UIs.
 
-### Member 4 — Persistence, security, API, testing & DevOps
+### Member 4: Manan Agrawal — Persistence, security, API, testing & DevOps
 - **Files:** `db/migration/*`, `*Repository`, `security/*` (sessions, MFA, OAuth, rate limiting, crypto),
   `attachment/*`, `web/*`, `config/*`, `Dockerfile`, `docker-compose.yml`, `render.yaml`, `.github/*`
 - **Tests:** `SecurityIntegrationTest`, `SessionSecurityIntegrationTest`, `MfaAndPasswordResetIntegrationTest`,
@@ -100,9 +100,3 @@ Before recording: `ITSM_RESET_DEMO=true ./mvnw spring-boot:run` so the live scen
 - `main` is always green (CI). Work on short branches: `feature/frontend-login`, `feature/admin-screens`.
 - Each member commits their own module so contributions are visible in the history.
 - Never commit `backend/data/` (local database) or secrets.
-
-## Before submitting: fill in the placeholders
-
-- Group number and teammates' names and IDs: `frontend/src/lib/project.ts` (shown on the sign-in page; then
-  run `npm run build:backend`) and the table at the top of `README.md`.
-- Module owners above: replace "Member 2/3/4" with names.

@@ -595,7 +595,7 @@ public class Incident extends BaseEntity {
         this.resolution = r;
         if (major) {
             majorStage = MajorStage.RESOLVED;
-            majorUpdates.add(new MajorIncidentUpdate(this, MajorStage.RESOLVED, truncate("Resolved: " + r.getSummary(), 2000),
+            majorUpdates.add(new MajorIncidentUpdate(this, MajorStage.RESOLVED, truncate(r.getSummary(), 2000),
                     r.getResolvedBy(), actor.name(), at));
         }
         notes.add(new IncidentNote(this, r.getResolvedBy(), actor.name(), NoteType.RESOLUTION, false,

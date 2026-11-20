@@ -1,13 +1,13 @@
 # ResolveIQ — Intelligent IT Service Management & Incident Resolution System
 
-CS F213 / MAC F212 Object-Oriented Programming · Semester I, 2026-27 · Group project · **Group —**
+CS F213 / MAC F212 Object-Oriented Programming · Semester I, 2026-27 · Group project · **Group 62**
 
 | Member | ID |
 |---|---|
 | Moh Bhargava | 2024B4A70845H |
 | Arnav Mhatre | 2025ADPS0135H |
-| *Team member 3* | *ID number* |
-| *Team member 4* | *ID number* |
+| Dheer Mayur Thakkar | 2025A7PS0074H |
+| Manan Agrawal | 2025A7PS0902H |
 
 ResolveIQ manages the complete lifecycle of IT incidents — **Report → Classify → Prioritise → Assign →
 Investigate → Resolve → Verify → Close** — with automatic prioritisation, SLA monitoring, escalation,
