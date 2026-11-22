@@ -149,6 +149,12 @@ event recording, available actions per role, row-level security and technician a
 | AST-10–13 | N/B | Assistant rules (unit) | Everyday phrases → impact/urgency without misreading negations; draft title and consistency; append-only transcript and terminal state; service wording score | `AssistantRulesTest` |
 | FE-17–20 | N/I | Display settings UI | Theme resolution and repair of bad stored values; applied to `<html>`; choices apply at once and persist; account settings load on sign-in and changes save back | `DisplaySettings.test.tsx` |
 | FE-21–23 | N/E | Assistant UI | Full conversation with inline guide, summary and incident link; restart/cancel commands and error recovery; voice dictation fills the box, unsupported browsers told | `Assistant.test.tsx` |
+| EXC-01 | E | Technician unavailable | Assign to an off-duty technician → 409 TECHNICIAN_UNAVAILABLE, incident unchanged | `ExceptionHandlingIntegrationTest` |
+| EXC-02 | E | Workload exceeded | Assign to a technician at capacity → 409 WORKLOAD_EXCEEDED | 〃 |
+| EXC-03 | E | Missing SLA configuration | No service or default policy → `MissingSlaConfigurationException` (422) | 〃 |
+| EXC-04 | E | Database failure | Connection failure → 503 DATABASE_UNAVAILABLE, internal message not leaked | 〃 |
+| EXC-05 | E | Concurrent modification | Stale version → 409 CONCURRENT_MODIFICATION | 〃 |
+| EXC-06 | E | Network failure | Mail server times out → notification recorded FAILED, operation unaffected | 〃 |
 | A11Y | — | Accessibility gate | axe-core (WCAG 2.1 A/AA + best practice) on 28 screens × 4 roles × 6 display combinations (5 themes + XL text with easier reading): 0 violations, no sideways overflow; contrast script: AA everywhere, AAA in High contrast | `frontend/scripts/a11y-scan.mjs`, `check-contrast.mjs` |
 | FE-13–16 | N/I | Sign-in page | Demo accounts folded until opened, one-click sign-in; wrong password message; 2FA step accepts digits only and needs six; Google button explains when not configured | `Login.test.tsx` |
 

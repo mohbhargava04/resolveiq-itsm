@@ -20,7 +20,7 @@ e-mail, bulk actions, and company sign-in with Google and two-step verification.
 | **Backend** | Java 21 · Spring Boot 3.5 · Spring Security (JWT + rotating refresh cookies, OIDC, TOTP) · JPA/Hibernate · Flyway |
 | **Database** | PostgreSQL 16 (production) · H2 (zero-setup development) |
 | **Frontend** | React 19 + TypeScript + Vite + Tailwind CSS; 6 themes (incl. high contrast), adjustable text size, voice input |
-| **Quality** | 170 automated tests (147 backend, 23 frontend), 0 accessibility violations (axe, WCAG 2.1 AA) across 6 display settings, GitHub Actions CI + CodeQL + Dependabot |
+| **Quality** | 176 automated tests (153 backend, 23 frontend), 0 accessibility violations (axe, WCAG 2.1 AA) across 6 display settings, GitHub Actions CI + CodeQL + Dependabot |
 | **Security** | OWASP Top 10:2025 mapping with a test for each claim — see [SECURITY.md](docs/SECURITY.md) |
 | **Deployment** | Docker image, Docker Compose, one-click Render Blueprint — see [DEPLOYMENT.md](docs/DEPLOYMENT.md) |
 | **API docs** | Swagger UI at `http://localhost:8080/swagger-ui.html` (development) |
@@ -50,8 +50,8 @@ npm run build:backend           # rebuild the bundled copy served by Spring Boot
 ```
 
 ```sh
-./mvnw test                     # backend: 147 tests
-npm test                        # frontend: 16 tests (in frontend/)
+./mvnw test                     # backend: 153 tests
+npm test                        # frontend: 23 tests (in frontend/)
 ITSM_RESET_DEMO=true ./mvnw spring-boot:run   # rebuild the live demo scenario (use before recording)
 docker compose up --build       # production-like stack with PostgreSQL (from the repo root)
 ```

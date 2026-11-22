@@ -38,7 +38,7 @@ owns one module below: read its files, run its tests, and be ready to explain th
 - **Talking points:** ER design and single-table inheritance; Flyway migrations V1 → V2; access token + rotating
   refresh cookie and why (SECURITY.md); token version for instant revocation; Google sign-in with PKCE and
   company domains; TOTP built from RFC 6238; rate limiting before Spring Security; safe uploads; OWASP Top 10:2025
-  mapping; 147 backend tests on H2 and PostgreSQL; CI, CodeQL, Dependabot; Docker and Render.
+  mapping; 153 backend tests on H2 and PostgreSQL; CI, CodeQL, Dependabot; Docker and Render.
 
 ## Demo script (15–20 minutes)
 
@@ -81,7 +81,7 @@ Before recording: `ITSM_RESET_DEMO=true ./mvnw spring-boot:run` so the live scen
    Extra-large text (whole layout scales), Warm paper, Reduce motion. Sign in on another browser: the settings follow the account.
 10. **Administration** (Member 4) — switch assignment strategy to Load-based; add a new category "IoT Devices"
    and show the classifier recognising it immediately; change a user's role; CSV import; allowed domains.
-11. **Engineering** (Member 4) — `./mvnw test` (147) and `npm test` (23) passing, CI and CodeQL on GitHub,
+11. **Engineering** (Member 4) — `./mvnw test` (153) and `npm test` (23) passing, CI and CodeQL on GitHub,
    Docker Compose with PostgreSQL, the deployed Render link.
 12. **Manager reports** — KPIs (MTTA, MTTR, SLA compliance, CSAT), self-help report, workload, trends, CSV export.
 
